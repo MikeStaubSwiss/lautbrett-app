@@ -178,6 +178,18 @@ img{max-width:100%}
         <button data-r="0.45">sehr langsam</button>
         <button data-r="0.65">langsam</button>
         <button data-r="0.95">normal</button></div></div>
+      <div class="pickrow"><label>Laut sprechen</label><div class="seg" id="repSeg">
+        <button data-n="1">1×</button>
+        <button data-n="2">2×</button>
+        <button data-n="3">3×</button></div></div>
+      <div class="pickrow"><label>Laut dehnen</label><div class="seg" id="lenSeg">
+        <button data-l="2">kurz</button>
+        <button data-l="6">mittel</button>
+        <button data-l="10">lang</button></div></div>
+      <div class="pickrow"><label>Laute erzeugen mit</label><div class="seg" id="modeSeg">
+        <button data-m="synth">Klang-Generator (genaue Länge)</button>
+        <button data-m="tts">Gerätestimme</button></div></div>
+      <p class="hint" style="font-size:.85rem">Der Klang-Generator dehnt jeden Laut genau so lang wie eingestellt und zieht ihn fliessend in den Vokal. Ganze Wörter spricht immer die Gerätestimme.</p>
     </div>
   </details>
 </div>
@@ -211,10 +223,10 @@ const WOERTER = [
 const DIPS=["AU","EI","EU"];
 function tokens(w){const out=[];for(let i=0;i<w.length;){const two=w.slice(i,i+2);if(DIPS.includes(two)){out.push(two);i+=2;}else{out.push(w[i]);i++;}}return out;}
 
-const st={view:"brett",learned:new Set("MALOSIRENUFW".split("")),case:"mixed",rate:0.65,wi:-1,sel:1,
+const st={view:"brett",learned:new Set("MALOSIRENUFW".split("")),case:"mixed",rate:0.65,reps:1,len:6,mode:"synth",wi:-1,sel:1,
   rows:[{c:"M",v:"E",x:1},{c:"L",v:"A",x:0},{c:"W",v:"I",x:0},{c:"S",v:"O",x:0},{c:"F",v:"U",x:0}]};
-try{const s=JSON.parse(localStorage.getItem("lautbrett")||"null");if(s){st.learned=new Set(s.learned);st.case=s.case;st.rate=Math.min(s.rate,0.95);if(s.rate===0.75)st.rate=0.65;if(s.rate===0.55)st.rate=0.45;}}catch(e){}
-const save=()=>{try{localStorage.setItem("lautbrett",JSON.stringify({learned:[...st.learned],case:st.case,rate:st.rate}))}catch(e){}};
+try{const s=JSON.parse(localStorage.getItem("lautbrett")||"null");if(s){st.learned=new Set(s.learned);st.case=s.case;if(s.reps)st.reps=s.reps;if(s.len)st.len=s.len;if(s.mode)st.mode=s.mode;st.rate=Math.min(s.rate,0.95);if(s.rate===0.75)st.rate=0.65;if(s.rate===0.55)st.rate=0.45;}}catch(e){}
+const save=()=>{try{localStorage.setItem("lautbrett",JSON.stringify({learned:[...st.learned],case:st.case,rate:st.rate,reps:st.reps,len:st.len,mode:st.mode}))}catch(e){}};
 const $=id=>document.getElementById(id);
 const lautOf=l=>LAUTE.find(x=>x.l===l);
 const reduce=()=>matchMedia("(prefers-reduced-motion:reduce)").matches;
@@ -229,7 +241,75 @@ let voice=null;
 function pickVoice(){const vs=speechSynthesis.getVoices();voice=vs.find(v=>/de-CH/i.test(v.lang))||vs.find(v=>/^de/i.test(v.lang))||null;}
 if("speechSynthesis" in window){pickVoice();speechSynthesis.onvoiceschanged=pickVoice;}
 const SLOW=0.55;
-function lautSpeak(text,onend){speak(text,Math.max(0.3,st.rate*SLOW),onend);}
+function sound(x){if(x.stop||x.dip)return x.s;const ch=x.l.toLowerCase();return x.v?ch.repeat(st.len)+"h":ch.repeat(st.len);}
+/* ---------- Klang-Generator: erzeugt Laute mit genau steuerbarer Länge ---------- */
+const DUR={2:0.35,6:0.8,10:1.5};
+const PH={
+  A:{F:[800,1250,2600],G:[1,.6,.2],v:1},
+  E:{F:[420,2100,2800],G:[1,.4,.25],v:1},
+  I:{F:[300,2300,3100],G:[1,.3,.2],v:.95},
+  O:{F:[450,800,2600],G:[1,.6,.08],v:1},
+  U:{F:[320,720,2400],G:[1,.35,.05],v:.95},
+  M:{F:[250,1100,2200],G:[1,.03,.01],v:.3},
+  N:{F:[260,1600,2600],G:[1,.05,.02],v:.3},
+  L:{F:[360,1300,2700],G:[1,.25,.1],v:.55},
+  R:{F:[350,1250,2000],G:[1,.3,.1],v:.55,trem:1},
+  W:{F:[300,1000,2300],G:[1,.25,.08],v:.7,n:.1,nf:1200,nq:.8},
+  S:{F:[300,1200,2500],G:[0,0,0],v:0,n:.6,nf:6500,nq:1.8},
+  F:{F:[300,1200,2500],G:[0,0,0],v:0,n:.4,nf:3200,nq:.35},
+  H:{F:[800,1250,2600],G:[0,0,0],v:0,n:.35,nf:1400,nq:.5}
+};
+const STOPS={T:{bf:4500,bq:1.2,vd:0},P:{bf:900,bq:.6,vd:0},K:{bf:2200,bq:1.5,vd:0},D:{bf:4000,bq:1.2,vd:1},B:{bf:800,bq:.6,vd:1}};
+const GLIDE={AU:["A","U"],EI:["A","I"],EU:["O","I"]};
+let actx=null,noiseBuf=null,cur=null;
+function ac(){try{if(!actx){const C=window.AudioContext||window.webkitAudioContext;if(!C)return null;actx=new C();
+  const len=actx.sampleRate*2;noiseBuf=actx.createBuffer(1,len,actx.sampleRate);const d=noiseBuf.getChannelData(0);for(let i=0;i<len;i++)d[i]=Math.random()*2-1;}
+  if(actx.state==="suspended")actx.resume();return actx;}catch(e){return null;}}
+function stopCur(){if(!cur)return;const c=actx,{m,nodes}=cur;cur=null;try{m.gain.cancelScheduledValues(c.currentTime);m.gain.setTargetAtTime(0,c.currentTime,.015);nodes.forEach(n=>n.stop(c.currentTime+.08));}catch(e){}}
+/* letters: z.B. ["M","A"]; jeder Laut dauert d Sekunden, Übergänge fliessend */
+function synth(letters,d){const c=ac();if(!c)return 0;stopCur();
+  const osc=c.createOscillator();osc.type="sawtooth";
+  const vg=c.createGain();vg.gain.value=0;osc.connect(vg);
+  const fs=[0,1,2].map(()=>{const f=c.createBiquadFilter();f.type="bandpass";const g=c.createGain();g.gain.value=0;vg.connect(f);f.connect(g);return{f,g};});
+  const ns=c.createBufferSource();ns.buffer=noiseBuf;ns.loop=true;const nf=c.createBiquadFilter();nf.type="bandpass";const ng=c.createGain();ng.gain.value=0;ns.connect(nf);nf.connect(ng);
+  const sum=c.createGain();fs.forEach(x=>x.g.connect(sum));ng.connect(sum);
+  const trem=c.createGain();trem.gain.value=1;const lfo=c.createOscillator();lfo.frequency.value=26;const lfoG=c.createGain();lfoG.gain.value=0;lfo.connect(lfoG);lfoG.connect(trem.gain);
+  const m=c.createGain();m.gain.value=0;sum.connect(trem);trem.connect(m);
+  const comp=c.createDynamicsCompressor();comp.threshold.value=-20;comp.ratio.value=6;const out=c.createGain();out.gain.value=1.3;m.connect(comp);comp.connect(out);out.connect(c.destination);
+  const set=(p,at,ramp)=>{const fn=ramp?"linearRampToValueAtTime":"setValueAtTime";
+    p.F.forEach((F,i)=>{fs[i].f.frequency[fn](F,at);fs[i].f.Q[fn](F/90,at);fs[i].g.gain[fn](p.G[i]*4,at);});
+    vg.gain[fn](p.v||0,at);ng.gain[fn](p.n||0,at);nf.frequency[fn](p.nf||1500,at);nf.Q[fn](p.nq||1,at);lfoG.gain[fn]((p.trem||0)*.45,at);};
+  /* Ablauf aufbauen */
+  const seq=[];letters.forEach((l,i)=>{
+    if(GLIDE[l]){seq.push({p:PH[GLIDE[l][0]],d:d*.45,x:.06});seq.push({p:PH[GLIDE[l][1]],d:d*.55,x:Math.min(.3,d*.4)});}
+    else if(STOPS[l]){seq.push({stop:STOPS[l],next:PH[(letters[i+1]&&(GLIDE[letters[i+1]]?GLIDE[letters[i+1]][0]:letters[i+1]))]||PH.E});}
+    else if(l==="H"){const nx=PH[(letters[i+1]&&(GLIDE[letters[i+1]]?GLIDE[letters[i+1]][0]:letters[i+1]))]||PH.A;seq.push({p:Object.assign({},PH.H,{F:nx.F}),d,x:.06});}
+    else seq.push({p:PH[l],d,x:.09});});
+  const t0=c.currentTime+.04;let t=t0,prev=null,first=true;
+  const silent={F:[500,1500,2500],G:[0,0,0],v:0,n:0};
+  for(const s of seq){
+    if(s.stop){const S=s.stop,closure={F:[250,1000,2200],G:[1,.02,.01],v:S.vd?.35:0,n:0};
+      if(first){set(closure,t,false);}else{set(prev,t,false);set(closure,t+.02,true);}
+      t+=first?.02:.06;set(closure,t,false);
+      set({F:closure.F,G:closure.G,v:S.vd?.3:0,n:1,nf:S.bf,nq:S.bq},t+.005,true);t+=.025;
+      const asp={F:s.next.F,G:[0,0,0],v:S.vd?.4:0,n:S.vd?.1:.35,nf:1500,nq:.6};set(asp,t+.01,true);t+=S.vd?.02:.05;
+      set(asp,t,false);prev=asp;first=false;continue;}
+    if(first){set(s.p,t,false);}else{set(prev,t,false);set(s.p,t+s.x,true);}
+    t+=s.d;prev=s.p;first=false;}
+  if(prev)set(prev,t,false);
+  const end=t;osc.frequency.setValueAtTime(215,t0);osc.frequency.linearRampToValueAtTime(185,end);
+  m.gain.setValueAtTime(0,t0);m.gain.linearRampToValueAtTime(.9,t0+.03);m.gain.setValueAtTime(.9,end-.04);m.gain.linearRampToValueAtTime(0,end+.06);
+  const nodes=[osc,ns,lfo];nodes.forEach(n=>{n.start(t0);n.stop(end+.12);});
+  cur={m,nodes};return end+.1-c.currentTime;}
+/* Laute abspielen: Klang-Generator oder Gerätestimme, so oft wie eingestellt */
+function playLaut(letters,onend){try{speechSynthesis.cancel();}catch(e){}
+  let n=st.reps;const gap=450;
+  const once=cb=>{if(st.mode==="synth"&&ac()){const sec=synth(letters,DUR[st.len]||.8);setTimeout(cb,sec*1000);}
+    else{const txt=letters.length>1?sound(lautOf(letters[0]))+sound(lautOf(letters[1])).replace("h",""):sound(lautOf(letters[0]));speak(txt,Math.max(0.3,st.rate*SLOW),cb);}};
+  const next=()=>{n--;if(n>0)setTimeout(()=>once(next),gap);else if(onend)onend();};once(next);}
+
+function lautSpeak(text,onend){let n=st.reps;const r=Math.max(0.3,st.rate*SLOW);
+  const next=()=>{n--;if(n>0)setTimeout(()=>speak(text,r,next),500);else if(onend)onend();};speak(text,r,next);}
 function speak(text,rate,onend){
   if(!("speechSynthesis" in window)){toast("Ton geht hier nicht. Laut selber lauten!");return;}
   try{speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(text.toLowerCase());u.lang=voice?voice.lang:"de-DE";if(voice)u.voice=voice;u.rate=rate||st.rate;if(onend)u.onend=onend;speechSynthesis.speak(u);}catch(e){toast("Ton geht hier nicht.");}
@@ -244,7 +324,7 @@ function show(v){st.view=v;document.querySelectorAll("nav button").forEach(b=>b.
 function dispLaut(l){const lo=l.toLowerCase(),cap=l[0]+lo.slice(1);if(st.case==="lower")return lo;if(st.case==="mixed")return l.length>1?cap+" "+lo:cap+lo;return l;}
 function renderLaute(){$("lautGrid").innerHTML="";LAUTE.forEach(x=>{const b=document.createElement("button");b.className="laut";
   b.innerHTML=`<b class="${x.v?"v":"k"}">${dispLaut(x.l)}</b><span>${x.e}</span><small>${x.w}${x.stop?" · kurz":""}</small>`;
-  b.onclick=()=>{document.querySelectorAll(".laut").forEach(e=>e.classList.remove("on"));b.classList.add("on");lautSpeak(x.s,()=>setTimeout(()=>speak(x.w),400));};
+  b.onclick=()=>{document.querySelectorAll(".laut").forEach(e=>e.classList.remove("on"));b.classList.add("on");playLaut([x.l],()=>setTimeout(()=>speak(x.w),400));};
   $("lautGrid").appendChild(b);});}
 
 /* Brett */
@@ -260,7 +340,7 @@ function renderBoard(){const B=$("board");B.innerHTML="";rowEls.length=0;
     const arc=document.createElement("div");arc.className="arc";
     tr.appendChild(k);row.append(tr,v,arc);B.appendChild(row);
     rowEls.push({row,tr,k,v,arc});
-    v.onclick=()=>{select(i);lautSpeak(lautOf(r.v).s);};
+    v.onclick=()=>{select(i);playLaut([r.v]);};
     bindDrag(i);
   });
   select(st.sel);placeAll();}
@@ -272,10 +352,10 @@ function place(i){const e=rowEls[i],r=st.rows[i];if(!e)return;const px=r.x*maxX(
 function placeAll(){st.rows.forEach((_,i)=>place(i));}
 function select(i){st.sel=i;rowEls.forEach((e,j)=>e.row.classList.toggle("sel",j===i));}
 function joinDone(i){const r=st.rows[i],c=lautOf(r.c),v=lautOf(r.v);
-  const cShow=c.stop?c.s:c.s.slice(0,4),vShow=v.dip?v.s:v.s.slice(0,3);
+  const cShow=sound(c),vShow=sound(v).replace("h","");
   $("result").innerHTML=`<span class="k">${cShow}</span>${c.stop?"!":"–"}<span class="v">${vShow}</span> → <strong><span class="k">${consTxt(r.c)}</span><span class="v">${vowTxt(r.v)}</span></strong>`;
-  if(c.stop)speak(sylTxt(r),st.rate*0.7);
-  else lautSpeak(c.s.slice(0,6)+v.s.replace("h",""));}
+  if(c.stop&&st.mode!=="synth")speak(sylTxt(r),st.rate*0.7);
+  else playLaut([r.c,r.v]);}
 function setX(i,x){const r=st.rows[i],was=r.x>=0.999;r.x=Math.min(1,Math.max(0,x));place(i);
   if(!was&&r.x>=0.999)joinDone(i);}
 function animateTo(i,target,dur=600){const r=st.rows[i],from=r.x;if(reduce()){setX(i,target);return;}
@@ -289,7 +369,7 @@ function bindDrag(i){const e=rowEls[i];let startPX=0,startX=0,moved=false,id=nul
     if(!moved&&Math.abs(dx)>5){moved=true;}
     if(moved){const m=maxX(i)||1;let x=startX+dx/m;if(x>0.94)x=1;setX(i,x);}});
   const end=ev=>{if(ev.pointerId!==id)return;id=null;e.k.classList.remove("drag");
-    if(!moved){lautSpeak(lautOf(st.rows[i].c).s);return;}
+    if(!moved){playLaut([st.rows[i].c]);return;}
     const r=st.rows[i];if(r.x>0.8&&r.x<1)animateTo(i,1,180);};
   e.k.addEventListener("pointerup",end);e.k.addEventListener("pointercancel",end);
   e.k.addEventListener("keydown",ev=>{const r=st.rows[i];
@@ -303,7 +383,7 @@ function learnedOf(isV){const l=LAUTE.filter(x=>!!x.v===isV&&st.learned.has(x.l)
 function renderTray(){[["trayK",false],["trayV",true]].forEach(([id,isV])=>{const el=$(id);el.innerHTML="";
   learnedOf(isV).forEach(x=>{const b=document.createElement("button");b.className="tile "+(isV?"v":"k")+(x.l.length>1?" wide":"");
     b.textContent=isV?vowTxt(x.l):consTxt(x.l);b.setAttribute("aria-label",(isV?"Vokal ":"Konsonant ")+x.l+" in die markierte Zeile legen");
-    b.onclick=()=>{const r=st.rows[st.sel];if(isV)r.v=x.l;else r.c=x.l;r.x=0;const s=st.sel;renderBoard();select(s);lautSpeak(x.s);$("result").innerHTML="";};
+    b.onclick=()=>{const r=st.rows[st.sel];if(isV)r.v=x.l;else r.c=x.l;r.x=0;const s=st.sel;renderBoard();select(s);playLaut([x.l]);$("result").innerHTML="";};
     el.appendChild(b);});});}
 $("resetBtn").onclick=()=>{st.rows.forEach((r,i)=>animateTo(i,0,400));$("result").innerHTML="";};
 $("mixBtn").onclick=()=>{const ks=learnedOf(false),vs=learnedOf(true).filter(x=>!x.dip);const vv=(vs.length?vs:learnedOf(true)).map(x=>x.l).sort(()=>Math.random()-.5);
@@ -327,7 +407,11 @@ function renderLearn(){$("learnChips").innerHTML="";
     b.onclick=()=>{st.learned.has(x.l)?st.learned.delete(x.l):st.learned.add(x.l);save();renderLearn();renderTray();if(st.view==="woerter")nextWord();else st.wi=-1;};$("learnChips").appendChild(b);});}
 document.querySelectorAll("#caseSeg button").forEach(b=>b.onclick=()=>{st.case=b.dataset.c;save();renderAll();});
 document.querySelectorAll("#rateSeg button").forEach(b=>b.onclick=()=>{st.rate=+b.dataset.r;save();renderSeg();speak("ma");});
-function renderSeg(){document.querySelectorAll("#caseSeg button").forEach(x=>x.setAttribute("aria-pressed",x.dataset.c===st.case));
+document.querySelectorAll("#repSeg button").forEach(b=>b.onclick=()=>{st.reps=+b.dataset.n;save();renderSeg();playLaut(["M"]);});
+document.querySelectorAll("#lenSeg button").forEach(b=>b.onclick=()=>{st.len=+b.dataset.l;save();renderSeg();playLaut(["M","A"]);});
+document.querySelectorAll("#modeSeg button").forEach(b=>b.onclick=()=>{st.mode=b.dataset.m;save();renderSeg();playLaut(["M","A"]);});
+function renderSeg(){document.querySelectorAll("#modeSeg button").forEach(x=>x.setAttribute("aria-pressed",x.dataset.m===st.mode));document.querySelectorAll("#repSeg button").forEach(x=>x.setAttribute("aria-pressed",+x.dataset.n===st.reps));
+  document.querySelectorAll("#lenSeg button").forEach(x=>x.setAttribute("aria-pressed",+x.dataset.l===st.len));document.querySelectorAll("#caseSeg button").forEach(x=>x.setAttribute("aria-pressed",x.dataset.c===st.case));
   document.querySelectorAll("#rateSeg button").forEach(x=>x.setAttribute("aria-pressed",+x.dataset.r===st.rate));}
 
 function renderAll(){renderSeg();renderLaute();renderBoard();renderTray();renderLearn();if(st.wi>=0)renderWord();}
