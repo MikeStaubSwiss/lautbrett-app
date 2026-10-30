@@ -20,10 +20,8 @@ Enthaltene Laute: M A L O S I R E N U F W H T P K D B AU EI EU.
 ## Aufbau
 
 ```
-index.html      Seite
-css/style.css   Gestaltung (helles und dunkles Design)
-js/app.js       Logik, Laut- und Wortlisten, Sprachausgabe
-.nojekyll       damit GitHub Pages die Dateien unverändert ausliefert
+index.html      die ganze App in einer Datei (Gestaltung, Logik, Laut- und Wortlisten)
+.nojekyll       damit GitHub Pages die Datei unverändert ausliefert
 ```
 
 Keine Abhängigkeiten, kein Build-Schritt. Schriften: Andika und Atkinson Hyperlegible über Google Fonts.
@@ -40,5 +38,5 @@ Klang und Dehnung der Laute hängen vom Gerät ab. Ohne Sprachausgabe funktionie
 
 ## Anpassen
 
-Laute und Wörter stehen am Anfang von `js/app.js` in den Listen `LAUTE` und `WOERTER`.
+Laute und Wörter stehen im `<script>`-Teil von `index.html` in den Listen `LAUTE` und `WOERTER`.
 Wörter werden mit Bindestrich in Silben getrennt, z. B. `["TO-MA-TE","🍅"]`.
