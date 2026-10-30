@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="de-CH">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="description" content="Lautbrett – erstes Zusammenlauten: Konsonant zum Vokal schieben, Silben hören, erste Wörter lesen.">
+  <meta name="theme-color" content="#f4f5f2">
+  <title>Lautbrett</title>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Andika:wght@400;700&family=Atkinson+Hyperlegible:wght@400;700&display=swap">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1><span class="k">M</span> + <span class="v">a</span> = <span class="k">M</span><span class="v">a</span></h1>
+    <p class="sub">Erstes Zusammenlauten · Konsonanten blau, Vokale rosa</p>
+  </header>
+
+  <nav role="tablist">
+    <button role="tab" aria-selected="false" data-view="laute">Laute</button>
+    <button role="tab" aria-selected="true" data-view="brett">Brett</button>
+    <button role="tab" aria-selected="false" data-view="woerter">Wörter</button>
+  </nav>
+
+  <section class="panel" id="v-laute" hidden>
+    <p class="hint">Tippe auf einen Buchstaben und höre seinen <b>Laut</b>, nicht seinen Namen: «mmm», nicht «em».</p>
+    <div class="grid" id="lautGrid"></div>
+  </section>
+
+  <section class="panel" id="v-brett">
+    <p class="hint">Lege den Finger auf das <span class="k">blaue Plättchen</span>, sprich seinen Laut und schiebe es langsam zum <span class="v">rosa Vokal</span>. Wenn sie sich berühren, hörst du die Silbe.</p>
+    <div class="board" id="board"></div>
+    <div class="actions">
+      <button class="btn main" id="resetBtn">Alle zurückschieben</button>
+      <button class="btn" id="mixBtn">Mischen</button>
+      <button class="btn" id="sameBtn">Gleicher Konsonant überall</button>
+    </div>
+    <p class="result" id="result" aria-live="polite"></p>
+    <div class="tray">
+      <label>Plättchen: antippen, dann landen sie in der markierten Zeile</label>
+      <div class="tiles" id="trayK"></div>
+      <div class="tiles" id="trayV"></div>
+    </div>
+  </section>
+
+  <section class="panel" id="v-woerter" hidden>
+    <p class="hint">Lies Silbe für Silbe. Tippe auf eine Silbe, wenn du Hilfe brauchst. Dann schau nach, ob du richtig gelesen hast.</p>
+    <div class="word" id="word"></div>
+    <div class="pic" id="pic"></div>
+    <div class="actions" style="justify-content:center">
+      <button class="btn" id="readWordBtn">Ganzes Wort hören</button>
+      <button class="btn main" id="nextWordBtn">Nächstes Wort</button>
+    </div>
+    <p class="count" id="count"></p>
+  </section>
+
+  <details>
+    <summary>Einstellungen für die Lehrperson</summary>
+    <div class="set">
+      <div class="pickrow"><label>Gelernte Laute (Brett und Wörter nutzen nur diese)</label><div class="chips" id="learnChips"></div></div>
+      <div class="pickrow"><label>Schreibweise</label><div class="seg" id="caseSeg">
+        <button data-c="upper">GROSS</button>
+        <button data-c="mixed">Gross + klein</button>
+        <button data-c="lower">klein</button></div></div>
+      <div class="pickrow"><label>Sprechtempo</label><div class="seg" id="rateSeg">
+        <button data-r="0.45">sehr langsam</button>
+        <button data-r="0.65">langsam</button>
+        <button data-r="0.95">normal</button></div></div>
+    </div>
+  </details>
+</div>
+<div class="toast" id="toast" hidden></div>
+<script src="js/app.js"></script>
+</body>
+</html>
