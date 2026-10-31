@@ -22,6 +22,7 @@ Enthaltene Laute: M A L O S I R E N U F W H T P K D B AU EI EU.
 ```
 index.html      die ganze App in einer Datei (Gestaltung, Logik, Laut- und Wortlisten)
 .nojekyll       damit GitHub Pages die Datei unverändert ausliefert
+aufnahmen.json  (optional) eigene Lautaufnahmen für alle Geräte
 ```
 
 Keine Abhängigkeiten, kein Build-Schritt. Schriften: Andika und Atkinson Hyperlegible über Google Fonts.
@@ -40,3 +41,55 @@ Klang und Dehnung der Laute hängen vom Gerät ab. Ohne Sprachausgabe funktionie
 
 Laute und Wörter stehen im `<script>`-Teil von `index.html` in den Listen `LAUTE` und `WOERTER`.
 Wörter werden mit Bindestrich in Silben getrennt, z. B. `["TO-MA-TE","🍅"]`.
+
+## Eigene Aufnahmen
+
+Unter **Einstellungen für die Lehrperson → Eigene Aufnahmen** kann jeder Laut mit der eigenen Stimme eingesprochen werden.
+Aufnahmen haben Vorrang vor dem Klang-Generator. Beim Zusammenlauten werden die beiden Aufnahmen fliessend ineinander übergeblendet.
+
+### So geht's
+
+1. App über **GitHub Pages** öffnen (das Mikrofon funktioniert nur über `https://`, nicht im Claude-Vorschaufenster).
+2. Bei einem Laut auf **● Aufnehmen** tippen, das Mikrofon erlauben, Laut sprechen, **■ Stopp** tippen (nach 4 Sekunden stoppt es von selbst).
+3. Mit **▶** anhören. Nicht gut? Einfach nochmals aufnehmen. **✕** löscht die eigene Aufnahme.
+4. Alternativ mit **Datei** eine fertige Tondatei wählen (z. B. aus der Sprachmemo-App des Handys).
+
+Die App schneidet Stille am Anfang und Ende ab und gleicht die Lautstärke an.
+Die Aufnahmen bleiben in diesem Browser gespeichert.
+
+### Für alle Geräte (z. B. alle iPads der Klasse)
+
+1. **Alle exportieren** tippen. Es entsteht die Datei `aufnahmen.json`.
+2. Diese Datei im Repository neben `index.html` hochladen.
+3. Ab dann lädt jedes Gerät die Aufnahmen automatisch. Eigene Aufnahmen auf einem Gerät haben dort Vorrang.
+
+Mit **Importieren** lässt sich eine `aufnahmen.json` auch direkt auf einem Gerät einlesen.
+
+### Sprechliste
+
+Tipps: ruhiger Raum, 20–30 cm vom Mikrofon, gleichmässig laut. Gedehnte Laute etwa 1–2 Sekunden halten.
+Keine Buchstabennamen («em», «es»), sondern den Laut. Kurze Laute ohne «e» danach («t», nicht «te»).
+
+| Laut | so sprechen | wie in |
+|---|---|---|
+| M | mmmm (summen) | Maus |
+| A | aaaa | Affe |
+| L | llll | Löwe |
+| O | oooo | Ohr |
+| S | ssss (stimmlos, wie eine Schlange) | Sonne |
+| I | iiii | Igel |
+| R | rrrr (gerollt oder gerieben, wie in der Klasse üblich) | Rakete |
+| E | eeee (langes e) | Esel |
+| N | nnnn | Nase |
+| U | uuuu | Ufo |
+| F | ffff | Fisch |
+| W | wwww | Wal |
+| H | hhhh (nur Hauch) | Hase |
+| T | t (kurz, ohne e) | Tomate |
+| P | p (kurz) | Pilz |
+| K | k (kurz) | Kiwi |
+| D | d (kurz) | Dose |
+| B | b (kurz) | Banane |
+| AU | au | Auto |
+| EI | ei | Ei |
+| EU | eu | Eule |

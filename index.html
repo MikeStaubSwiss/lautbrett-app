@@ -14,7 +14,7 @@
   --vokal:#d0306e; --kons:#1e63c4;
   --tile-v:#f6c3d6; --tile-v-edge:#e29ab6; --tile-k:#a9d3f5; --tile-k-edge:#7fb5e3;
   --board:#ffffff; --track:#eceef1; --join:#f2b61b;
-  --card:#ffffff; --chip:#e8ecf1;
+  --card:#ffffff; --chip:#e8ecf1; --rec:#c62828; --ok:#2e7d32;
   --f-letter:"Andika","Comic Sans MS",system-ui,sans-serif;
   --f-ui:"Atkinson Hyperlegible",system-ui,-apple-system,sans-serif;
 }
@@ -23,13 +23,13 @@
   --vokal:#ff8fb7; --kons:#8fc2ff;
   --tile-v:#f6c3d6; --tile-v-edge:#c9819d; --tile-k:#a9d3f5; --tile-k-edge:#6f9fca;
   --board:#e4e8e4; --track:#cfd5d1; --join:#f5c84c;
-  --card:#25392f; --chip:#2c4238; color-scheme:dark}}
+  --card:#25392f; --chip:#2c4238; --rec:#ff6b6b; --ok:#7ed492; color-scheme:dark}}
 :root[data-theme="dark"]{
   --paper:#1e2f29; --line:#2f4740; --ink:#eef3ee; --muted:#a9bbb3;
   --vokal:#ff8fb7; --kons:#8fc2ff;
   --tile-v:#f6c3d6; --tile-v-edge:#c9819d; --tile-k:#a9d3f5; --tile-k-edge:#6f9fca;
   --board:#e4e8e4; --track:#cfd5d1; --join:#f5c84c;
-  --card:#25392f; --chip:#2c4238; color-scheme:dark}
+  --card:#25392f; --chip:#2c4238; --rec:#ff6b6b; --ok:#7ed492; color-scheme:dark}
 *{box-sizing:border-box}
 [hidden]{display:none!important}
 .board,.tile{user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
@@ -112,6 +112,21 @@ summary{cursor:pointer;font-weight:700}
 .seg{display:flex;flex-wrap:wrap;gap:6px}
 .seg button{font:700 .95rem var(--f-ui);border:2px solid var(--line);background:var(--paper);color:var(--ink);border-radius:10px;padding:8px 12px;cursor:pointer}
 .seg button[aria-pressed="true"]{border-color:var(--kons)}
+
+/* Aufnahmen */
+.reclist{display:flex;flex-direction:column;gap:10px}
+.recrow{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding-bottom:10px;border-bottom:1px solid var(--line)}
+.recrow .tile{--w:40px}
+.recinfo{flex:1;min-width:140px;display:flex;flex-direction:column;gap:2px}
+.recinfo b{font-family:var(--f-letter);font-size:1.05rem}.recinfo b small{font:400 .8rem var(--f-ui);color:var(--muted)}
+.recinfo>small{color:var(--muted);font-size:.8rem}.recinfo>small.ok{color:var(--ok)}
+.sbtn{font:700 .9rem var(--f-ui);border:2px solid var(--line);background:var(--paper);color:var(--ink);border-radius:10px;padding:8px 10px;cursor:pointer;position:relative}
+.sbtn.rec{color:var(--rec)}.sbtn.rec.on{background:var(--rec);color:#fff;border-color:var(--rec)}
+.sbtn:disabled{opacity:.35;cursor:default}
+.vh{position:absolute;width:1px;height:1px;opacity:0;overflow:hidden;pointer-events:none}
+label.btn{display:inline-flex;align-items:center;position:relative}
+.pickrow label.sbtn,.pickrow label.btn{text-transform:none;letter-spacing:0;color:var(--ink);font-size:.9rem}
+.pickrow label.btn{font-size:1rem}
 .toast{position:fixed;left:50%;bottom:calc(18px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--paper);padding:10px 16px;border-radius:12px;font-size:.9rem;max-width:calc(100% - 32px)}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 
@@ -190,6 +205,12 @@ img{max-width:100%}
         <button data-m="synth">Klang-Generator (genaue Länge)</button>
         <button data-m="tts">Gerätestimme</button></div></div>
       <p class="hint" style="font-size:.85rem">Der Klang-Generator dehnt jeden Laut genau so lang wie eingestellt und zieht ihn fliessend in den Vokal. Ganze Wörter spricht immer die Gerätestimme.</p>
+      <div class="pickrow"><label>Eigene Aufnahmen</label>
+        <p class="hint" style="font-size:.85rem">Sprich jeden Laut so, wie die Kinder ihn lauten sollen: gedehnt bei M, S, A usw. (etwa 1 bis 2 Sekunden), kurz bei T, P, K, D, B, ohne «e» dahinter. Stille am Anfang und Ende wird abgeschnitten, die Lautstärke angeglichen. Aufnahmen haben Vorrang vor dem Klang-Generator.</p>
+        <p class="count" id="recCount" style="text-align:left"></p>
+        <div id="recList" class="reclist"></div>
+        <div class="actions"><button class="btn" id="recExport">Alle exportieren (aufnahmen.json)</button><label class="btn">Importieren<input type="file" id="recImportFile" accept=".json,application/json" class="vh"></label></div>
+      </div>
     </div>
   </details>
 </div>
@@ -199,7 +220,7 @@ const LAUTE = [
   {l:"M",v:0,s:"mmmmmmmmmm",w:"Maus",e:"🐭"},{l:"A",v:1,s:"aaaaaaah",w:"Affe",e:"🐒"},
   {l:"L",v:0,s:"llllllllll",w:"Löwe",e:"🦁"},{l:"O",v:1,s:"oooooooh",w:"Ohr",e:"👂"},
   {l:"S",v:0,s:"ssssssssss",w:"Sonne",e:"☀️"},{l:"I",v:1,s:"iiiiiiih",w:"Igel",e:"🦔"},
-  {l:"R",v:0,s:"rrrrrrrrrr",w:"Rakete",e:"🚀"},{l:"E",v:1,s:"eeeeeeeh",w:"Ente",e:"🦆"},
+  {l:"R",v:0,s:"rrrrrrrrrr",w:"Rakete",e:"🚀"},{l:"E",v:1,s:"eeeeeeeh",w:"Esel",e:"🫏"},
   {l:"N",v:0,s:"nnnnnnnnnn",w:"Nase",e:"👃"},{l:"U",v:1,s:"uuuuuuuh",w:"Ufo",e:"🛸"},
   {l:"F",v:0,s:"ffffffffff",w:"Fisch",e:"🐟"},{l:"W",v:0,s:"wwwwwwwwww",w:"Wal",e:"🐳"},
   {l:"H",v:0,s:"hhhhhh",w:"Hase",e:"🐰"},
@@ -304,9 +325,85 @@ function synth(letters,d){const c=ac();if(!c)return 0;stopCur();
 /* Laute abspielen: Klang-Generator oder Gerätestimme, so oft wie eingestellt */
 function playLaut(letters,onend){try{speechSynthesis.cancel();}catch(e){}
   let n=st.reps;const gap=450;
-  const once=cb=>{if(st.mode==="synth"&&ac()){const sec=synth(letters,DUR[st.len]||.8);setTimeout(cb,sec*1000);}
+  const once=cb=>{if(hasRec(letters)){playRec(letters,cb);return;}if(st.mode==="synth"&&ac()){const sec=synth(letters,DUR[st.len]||.8);setTimeout(cb,sec*1000);}
     else{const txt=letters.length>1?sound(lautOf(letters[0]))+sound(lautOf(letters[1])).replace("h",""):sound(lautOf(letters[0]));speak(txt,Math.max(0.3,st.rate*SLOW),cb);}};
   const next=()=>{n--;if(n>0)setTimeout(()=>once(next),gap);else if(onend)onend();};once(next);}
+
+/* ---------- Eigene Aufnahmen ---------- */
+const REC={},RECBUF={};let repoRec={},rdb=null;
+function idb(){return new Promise(res=>{try{const r=indexedDB.open("lautbrett",1);r.onupgradeneeded=()=>r.result.createObjectStore("rec");r.onsuccess=()=>{rdb=r.result;res(rdb)};r.onerror=()=>res(null);}catch(e){res(null)}});}
+function idbAll(){return new Promise(res=>{const out={};if(!rdb)return res(out);try{const c=rdb.transaction("rec").objectStore("rec").openCursor();c.onsuccess=()=>{const k=c.result;if(k){out[k.key]=k.value;k.continue();}else res(out)};c.onerror=()=>res(out);}catch(e){res(out)}});}
+function idbPut(k,v){try{if(rdb)rdb.transaction("rec","readwrite").objectStore("rec").put(v,k)}catch(e){}}
+function idbDel(k){try{if(rdb)rdb.transaction("rec","readwrite").objectStore("rec").delete(k)}catch(e){}}
+async function loadRecs(){await idb();const local=await idbAll();
+  try{const r=await fetch("aufnahmen.json",{cache:"no-store"});if(r.ok){const j=await r.json();repoRec=j.laute||{};}}catch(e){}
+  Object.assign(REC,repoRec,local);renderRec();}
+function toWav(buf){const sr=buf.sampleRate,d=buf.getChannelData(0),n=d.length,ab=new ArrayBuffer(44+n*2),v=new DataView(ab);
+  const w=(o,s)=>{for(let i=0;i<s.length;i++)v.setUint8(o+i,s.charCodeAt(i))};
+  w(0,"RIFF");v.setUint32(4,36+n*2,true);w(8,"WAVE");w(12,"fmt ");v.setUint32(16,16,true);v.setUint16(20,1,true);v.setUint16(22,1,true);
+  v.setUint32(24,sr,true);v.setUint32(28,sr*2,true);v.setUint16(32,2,true);v.setUint16(34,16,true);w(36,"data");v.setUint32(40,n*2,true);
+  for(let i=0;i<n;i++){const s=Math.max(-1,Math.min(1,d[i]));v.setInt16(44+i*2,s<0?s*0x8000:s*0x7fff,true);}return ab;}
+function abToURL(ab){let s="";const u=new Uint8Array(ab);for(let i=0;i<u.length;i+=0x8000)s+=String.fromCharCode.apply(null,u.subarray(i,i+0x8000));return "data:audio/wav;base64,"+btoa(s);}
+function urlToAB(u){const b=atob(u.split(",")[1]);const a=new Uint8Array(b.length);for(let i=0;i<b.length;i++)a[i]=b.charCodeAt(i);return a.buffer;}
+function decode(ab){const c=ac();return new Promise((res,rej)=>{try{const p=c.decodeAudioData(ab,res,rej);if(p&&p.catch)p.catch(rej);}catch(e){rej(e)}});}
+/* Aufnahme aufbereiten: mono, 22 kHz, Stille weg, gleich laut */
+async function processAudio(ab){const buf=await decode(ab),sr=22050,len=Math.max(1,Math.ceil(buf.duration*sr));
+  const oc=new (window.OfflineAudioContext||window.webkitOfflineAudioContext)(1,len,sr);const s=oc.createBufferSource();s.buffer=buf;s.connect(oc.destination);s.start();
+  const m=await oc.startRendering(),d=m.getChannelData(0);let peak=0;for(let i=0;i<d.length;i++)peak=Math.max(peak,Math.abs(d[i]));
+  if(peak<0.02)throw new Error("leise");
+  const th=peak*0.08,win=Math.round(sr*.01),loud=i=>{let e=0;for(let j=i;j<Math.min(d.length,i+win);j++)e=Math.max(e,Math.abs(d[j]));return e>th;};
+  let a=0,b=d.length;while(a<d.length&&!loud(a))a+=win;while(b>a&&!loud(Math.max(0,b-win)))b-=win;
+  const pad=Math.round(sr*.04);a=Math.max(0,a-pad);b=Math.min(d.length,b+pad);
+  const out=ac().createBuffer(1,b-a,sr),o=out.getChannelData(0),g=0.9/peak,f=Math.round(sr*.012);
+  for(let i=0;i<o.length;i++){let x=d[a+i]*g;if(i<f)x*=i/f;if(i>o.length-f)x*=(o.length-i)/f;o[i]=x;}
+  return abToURL(toWav(out));}
+async function saveAudio(l,ab){try{const url=await processAudio(ab);REC[l]=url;delete RECBUF[l];idbPut(l,url);renderRec();playRec([l]);}
+  catch(e){toast(e.message==="leise"?"Nichts gehört. Bitte näher ans Mikrofon und nochmals.":"Diese Aufnahme konnte nicht gelesen werden.");}}
+let recStream=null,recorder=null,recLetter=null,recTimer=null;
+async function startRec(l){if(recorder){stopRec();return;}
+  if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia||!window.MediaRecorder){toast("Aufnehmen geht hier nicht. Öffne die App über GitHub Pages oder nutze «Datei».");return;}
+  try{if(!recStream||!recStream.active)recStream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:false,noiseSuppression:true,autoGainControl:true}});}
+  catch(e){toast("Kein Zugriff aufs Mikrofon. Erlaube das Mikrofon im Browser oder nutze «Datei».");return;}
+  ac();const chunks=[];recorder=new MediaRecorder(recStream);recLetter=l;
+  recorder.ondataavailable=e=>{if(e.data&&e.data.size)chunks.push(e.data)};
+  recorder.onstop=async()=>{const l2=recLetter;recorder=null;recLetter=null;clearTimeout(recTimer);renderRec();
+    const blob=new Blob(chunks,{type:(chunks[0]&&chunks[0].type)||"audio/webm"});await saveAudio(l2,await blob.arrayBuffer());};
+  recorder.start();renderRec();recTimer=setTimeout(stopRec,4000);}
+function stopRec(){if(recorder&&recorder.state!=="inactive")recorder.stop();}
+async function getBuf(l){if(!RECBUF[l])RECBUF[l]=await decode(urlToAB(REC[l]));return RECBUF[l];}
+let recSrc=[];
+function stopRecPlay(){recSrc.forEach(s=>{try{s.stop()}catch(e){}});recSrc=[];}
+const hasRec=ls=>ls.every(l=>REC[l]);
+async function playRec(letters,onend){const c=ac();if(!c)return;stopCur();stopRecPlay();
+  let bufs;try{bufs=await Promise.all(letters.map(getBuf));}catch(e){toast("Aufnahme kann nicht abgespielt werden.");return;}
+  const X=.07;let t=c.currentTime+.03;
+  bufs.forEach((b,i)=>{const s=c.createBufferSource();s.buffer=b;const g=c.createGain();s.connect(g);g.connect(c.destination);
+    const s0=i===0?t:t-X,end=s0+b.duration;g.gain.setValueAtTime(i===0?1:0,s0);if(i>0)g.gain.linearRampToValueAtTime(1,s0+X);
+    if(i<bufs.length-1){g.gain.setValueAtTime(1,end-X);g.gain.linearRampToValueAtTime(0,end);}
+    s.start(s0);recSrc.push(s);t=end;});
+  if(onend)setTimeout(onend,(t-c.currentTime)*1000);}
+function sbtn(txt,fn,cls){const b=document.createElement("button");b.className="sbtn "+(cls||"");b.textContent=txt;b.onclick=fn;return b;}
+function renderRec(){const el=$("recList");if(!el)return;el.innerHTML="";
+  LAUTE.forEach(x=>{const row=document.createElement("div");row.className="recrow";
+    const t=document.createElement("span");t.className="tile "+(x.v?"v":"k")+(x.l.length>1?" wide":"");t.textContent=x.v?vowTxt(x.l):consTxt(x.l);
+    const fromRepo=REC[x.l]&&REC[x.l]===repoRec[x.l],own=REC[x.l]&&!fromRepo,isRec=recLetter===x.l;
+    const info=document.createElement("span");info.className="recinfo";
+    info.innerHTML=`<b>${x.stop?"kurz: ":x.dip?"":"gedehnt: "}${x.stop?x.l.toLowerCase():x.dip?x.l.toLowerCase():x.l.toLowerCase().repeat(4)} <small>(wie in ${x.w})</small></b><small class="${REC[x.l]?"ok":""}">${isRec?"● nimmt auf … (max. 4 Sek.)":own?"✓ eigene Aufnahme":fromRepo?"✓ Aufnahme von GitHub":"noch keine Aufnahme"}</small>`;
+    const rb=sbtn(isRec?"■ Stopp":"● Aufnehmen",()=>startRec(x.l),"rec"+(isRec?" on":""));
+    const pb=sbtn("▶",()=>playLaut([x.l]));pb.setAttribute("aria-label","Anhören");
+    const fl=document.createElement("label");fl.className="sbtn";fl.textContent="Datei";const fi=document.createElement("input");fi.type="file";fi.accept="audio/*";fi.className="vh";
+    fi.onchange=async()=>{const f=fi.files[0];if(f)await saveAudio(x.l,await f.arrayBuffer());fi.value="";};fl.appendChild(fi);
+    const del=sbtn("✕",()=>{idbDel(x.l);delete RECBUF[x.l];if(repoRec[x.l])REC[x.l]=repoRec[x.l];else delete REC[x.l];renderRec();});
+    del.disabled=!own;del.setAttribute("aria-label","Eigene Aufnahme löschen");
+    row.append(t,info,rb,pb,fl,del);el.appendChild(row);});
+  $("recCount").textContent=`${LAUTE.filter(x=>REC[x.l]).length} von ${LAUTE.length} Lauten aufgenommen`;}
+$("recExport").onclick=()=>{const keys=LAUTE.map(x=>x.l).filter(l=>REC[l]);if(!keys.length){toast("Noch keine Aufnahmen.");return;}
+  const o={};keys.forEach(k=>o[k]=REC[k]);const blob=new Blob([JSON.stringify({version:1,laute:o})],{type:"application/json"});
+  const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="aufnahmen.json";document.body.appendChild(a);a.click();
+  setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},1500);toast("aufnahmen.json gespeichert. Lade sie auf GitHub neben index.html hoch.");};
+$("recImportFile").onchange=async e=>{const f=e.target.files[0];if(!f)return;try{const j=JSON.parse(await f.text());let n=0;
+  Object.entries(j.laute||{}).forEach(([k,v])=>{if(lautOf(k)&&/^data:audio/.test(v)){REC[k]=v;delete RECBUF[k];idbPut(k,v);n++;}});renderRec();toast(n+" Aufnahmen übernommen.");}
+  catch(err){toast("Diese Datei ist keine aufnahmen.json.");}e.target.value="";};
 
 function lautSpeak(text,onend){let n=st.reps;const r=Math.max(0.3,st.rate*SLOW);
   const next=()=>{n--;if(n>0)setTimeout(()=>speak(text,r,next),500);else if(onend)onend();};speak(text,r,next);}
@@ -354,7 +451,7 @@ function select(i){st.sel=i;rowEls.forEach((e,j)=>e.row.classList.toggle("sel",j
 function joinDone(i){const r=st.rows[i],c=lautOf(r.c),v=lautOf(r.v);
   const cShow=sound(c),vShow=sound(v).replace("h","");
   $("result").innerHTML=`<span class="k">${cShow}</span>${c.stop?"!":"–"}<span class="v">${vShow}</span> → <strong><span class="k">${consTxt(r.c)}</span><span class="v">${vowTxt(r.v)}</span></strong>`;
-  if(c.stop&&st.mode!=="synth")speak(sylTxt(r),st.rate*0.7);
+  if(c.stop&&st.mode!=="synth"&&!hasRec([r.c,r.v]))speak(sylTxt(r),st.rate*0.7);
   else playLaut([r.c,r.v]);}
 function setX(i,x){const r=st.rows[i],was=r.x>=0.999;r.x=Math.min(1,Math.max(0,x));place(i);
   if(!was&&r.x>=0.999)joinDone(i);}
@@ -414,8 +511,9 @@ function renderSeg(){document.querySelectorAll("#modeSeg button").forEach(x=>x.s
   document.querySelectorAll("#lenSeg button").forEach(x=>x.setAttribute("aria-pressed",+x.dataset.l===st.len));document.querySelectorAll("#caseSeg button").forEach(x=>x.setAttribute("aria-pressed",x.dataset.c===st.case));
   document.querySelectorAll("#rateSeg button").forEach(x=>x.setAttribute("aria-pressed",+x.dataset.r===st.rate));}
 
-function renderAll(){renderSeg();renderLaute();renderBoard();renderTray();renderLearn();if(st.wi>=0)renderWord();}
+function renderAll(){renderSeg();renderRec();renderLaute();renderBoard();renderTray();renderLearn();if(st.wi>=0)renderWord();}
 renderAll();
+loadRecs();
 if(document.fonts)document.fonts.ready.then(placeAll);
 </script>
 </body>
