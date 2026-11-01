@@ -582,7 +582,7 @@ renderAll();
 loadRecs();
 /* ---------- Passwortschutz für den Lehrerbereich ---------- */
 /* Optional: gleiches Passwort auf allen Geräten. Den Code aus den Einstellungen hier eintragen. */
-const PASSWORT_HASH="";
+const PASSWORT_HASH="7b0afa20afadc2152ad9877275aa4598d6cb506af9529f1af1a24f28e776f100";
 async function sha(t){try{const b=await crypto.subtle.digest("SHA-256",new TextEncoder().encode("lautbrett:"+t));return [...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,"0")).join("");}
   catch(e){let h=0;for(const c of "lautbrett:"+t)h=(h*31+c.charCodeAt(0))|0;return "x"+(h>>>0).toString(16);}}
 function getHash(){if(PASSWORT_HASH)return PASSWORT_HASH;try{return localStorage.getItem("lautbrett-pw")||""}catch(e){return ""}}
