@@ -127,6 +127,17 @@ summary{cursor:pointer;font-weight:700}
 label.btn{display:inline-flex;align-items:center;position:relative}
 .pickrow label.sbtn,.pickrow label.btn{text-transform:none;letter-spacing:0;color:var(--ink);font-size:.9rem}
 .pickrow label.btn{font-size:1rem}
+
+/* Silben-Matrix */
+.sublabel{margin:8px 0 0;font-size:.8rem;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:700}
+.matrix-wrap{overflow-x:auto;max-width:100%;padding-bottom:4px}
+.matrix{border-collapse:separate;border-spacing:4px}
+.matrix th{font:700 1.1rem var(--f-letter);padding:0 4px}
+.cell{font:700 1rem var(--f-letter);min-width:46px;height:40px;border-radius:8px;border:2px solid var(--line);background:var(--paper);color:var(--ink);cursor:pointer}
+.cell.has{background:color-mix(in srgb,var(--ok) 22%,var(--paper));border-color:var(--ok)}
+.cell.sel{outline:3px solid var(--join);outline-offset:1px}
+.sylbig{font:700 2rem var(--f-letter);min-width:72px}
+.result .sbtn{margin-left:8px;vertical-align:middle;font-family:var(--f-ui)}
 .toast{position:fixed;left:50%;bottom:calc(18px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--paper);padding:10px 16px;border-radius:12px;font-size:.9rem;max-width:calc(100% - 32px)}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 
@@ -209,6 +220,11 @@ img{max-width:100%}
         <p class="hint" style="font-size:.85rem">Sprich jeden Laut so, wie die Kinder ihn lauten sollen: gedehnt bei M, S, A usw. (etwa 1 bis 2 Sekunden), kurz bei T, P, K, D, B, ohne «e» dahinter. Stille am Anfang und Ende wird abgeschnitten, die Lautstärke angeglichen. Aufnahmen haben Vorrang vor dem Klang-Generator.</p>
         <p class="count" id="recCount" style="text-align:left"></p>
         <div id="recList" class="reclist"></div>
+        <p class="sublabel">Silben aufnehmen (Zusammenlauten)</p>
+        <p class="hint" style="font-size:.85rem">Tippe eine Silbe an und nimm sie auf, zum Beispiel «mmmaaa». Wenn ein Kind auf dem Brett diesen Konsonanten zum Vokal schiebt, hört es deine Silbe. Grün = aufgenommen. Ohne Silbenaufnahme werden die einzelnen Laute verbunden.</p>
+        <p class="count" id="sylCount" style="text-align:left"></p>
+        <div id="sylBar" class="recrow"></div>
+        <div class="matrix-wrap"><table id="sylMatrix" class="matrix"></table></div>
         <div class="actions"><button class="btn" id="recExport">Alle exportieren (aufnahmen.json)</button><label class="btn">Importieren<input type="file" id="recImportFile" accept=".json,application/json" class="vh"></label></div>
       </div>
     </div>
@@ -228,7 +244,8 @@ const LAUTE = [
   {l:"K",v:0,stop:1,s:"k",w:"Kiwi",e:"🥝"},{l:"D",v:0,stop:1,s:"d",w:"Dose",e:"🥫"},
   {l:"B",v:0,stop:1,s:"b",w:"Banane",e:"🍌"},
   {l:"AU",v:1,dip:1,s:"aauu",w:"Auto",e:"🚗"},{l:"EI",v:1,dip:1,s:"eeii",w:"Ei",e:"🥚"},
-  {l:"EU",v:1,dip:1,s:"eeuu",w:"Eule",e:"🦉"}
+  {l:"EU",v:1,dip:1,s:"eeuu",w:"Eule",e:"🦉"},
+  {l:"Ä",v:1,s:"äääääääh",w:"Äpfel",e:"🍎"},{l:"Ö",v:1,s:"öööööööh",w:"Öl",e:"🫒"},{l:"Ü",v:1,s:"üüüüüüüh",w:"Überraschung",e:"🎁"}
 ];
 const WOERTER = [
   ["MA-MA","👩"],["O-MA","👵"],["LA-MA","🦙"],["NA-SE","👃"],["RO-SE","🌹"],
@@ -239,7 +256,8 @@ const WOERTER = [
   ["DO-SE","🥫"],["BA-NA-NE","🍌"],["NA-DEL","🪡"],["TAS-SE","☕"],["KOF-FER","🧳"],
   ["BUS","🚌"],["HUT","🎩"],["KEKS","🍪"],["TROM-PE-TE","🎺"],
   ["AU-TO","🚗"],["MAUS","🐭"],["BAUM","🌳"],["HAUS","🏠"],
-  ["EI","🥚"],["EI-MER","🪣"],["LEI-TER","🪜"],["EU-LE","🦉"],["FEU-ER","🔥"]
+  ["EI","🥚"],["EI-MER","🪣"],["LEI-TER","🪜"],["EU-LE","🦉"],["FEU-ER","🔥"],
+  ["KÄ-SE","🧀"],["BÄR","🐻"],["LÖ-WE","🦁"],["MÖ-WE","🕊️"],["TÜ-TE","🛍️"],["MÜS-LI","🥣"],["HÜ-TE","👒"]
 ];
 const DIPS=["AU","EI","EU"];
 function tokens(w){const out=[];for(let i=0;i<w.length;){const two=w.slice(i,i+2);if(DIPS.includes(two)){out.push(two);i+=2;}else{out.push(w[i]);i++;}}return out;}
@@ -271,6 +289,9 @@ const PH={
   I:{F:[300,2300,3100],G:[1,.3,.2],v:.95},
   O:{F:[450,800,2600],G:[1,.6,.08],v:1},
   U:{F:[320,720,2400],G:[1,.35,.05],v:.95},
+  "Ä":{F:[650,1750,2500],G:[1,.5,.2],v:1},
+  "Ö":{F:[380,1450,2250],G:[1,.4,.15],v:.95},
+  "Ü":{F:[290,1700,2150],G:[1,.35,.15],v:.95},
   M:{F:[250,1100,2200],G:[1,.03,.01],v:.3},
   N:{F:[260,1600,2600],G:[1,.05,.02],v:.3},
   L:{F:[360,1300,2700],G:[1,.25,.1],v:.55},
@@ -325,7 +346,7 @@ function synth(letters,d){const c=ac();if(!c)return 0;stopCur();
 /* Laute abspielen: Klang-Generator oder Gerätestimme, so oft wie eingestellt */
 function playLaut(letters,onend){try{speechSynthesis.cancel();}catch(e){}
   let n=st.reps;const gap=450;
-  const once=cb=>{if(hasRec(letters)){playRec(letters,cb);return;}if(st.mode==="synth"&&ac()){const sec=synth(letters,DUR[st.len]||.8);setTimeout(cb,sec*1000);}
+  const once=cb=>{const sk=letters.join("+");if(letters.length>1&&REC[sk]){playRec([sk],cb);return;}if(hasRec(letters)){playRec(letters,cb);return;}if(st.mode==="synth"&&ac()){const sec=synth(letters,DUR[st.len]||.8);setTimeout(cb,sec*1000);}
     else{const txt=letters.length>1?sound(lautOf(letters[0]))+sound(lautOf(letters[1])).replace("h",""):sound(lautOf(letters[0]));speak(txt,Math.max(0.3,st.rate*SLOW),cb);}};
   const next=()=>{n--;if(n>0)setTimeout(()=>once(next),gap);else if(onend)onend();};once(next);}
 
@@ -396,13 +417,36 @@ function renderRec(){const el=$("recList");if(!el)return;el.innerHTML="";
     const del=sbtn("✕",()=>{idbDel(x.l);delete RECBUF[x.l];if(repoRec[x.l])REC[x.l]=repoRec[x.l];else delete REC[x.l];renderRec();});
     del.disabled=!own;del.setAttribute("aria-label","Eigene Aufnahme löschen");
     row.append(t,info,rb,pb,fl,del);el.appendChild(row);});
-  $("recCount").textContent=`${LAUTE.filter(x=>REC[x.l]).length} von ${LAUTE.length} Lauten aufgenommen`;}
-$("recExport").onclick=()=>{const keys=LAUTE.map(x=>x.l).filter(l=>REC[l]);if(!keys.length){toast("Noch keine Aufnahmen.");return;}
+  $("recCount").textContent=`${LAUTE.filter(x=>REC[x.l]).length} von ${LAUTE.length} Lauten aufgenommen`;renderSyl();}
+let selSyl="M+A";
+const CONS=()=>LAUTE.filter(x=>!x.v),VOWS=()=>LAUTE.filter(x=>x.v);
+const sylLabel=k=>{const [c,v]=k.split("+");return consTxt(c)+vowTxt(v);};
+function renderSyl(){const tb=$("sylMatrix");if(!tb)return;tb.innerHTML="";
+  const hr=document.createElement("tr");hr.innerHTML="<th></th>"+VOWS().map(v=>`<th class="v">${vowTxt(v.l)}</th>`).join("");tb.appendChild(hr);
+  CONS().forEach(c=>{const tr=document.createElement("tr");const th=document.createElement("th");th.className="k";th.textContent=consTxt(c.l);tr.appendChild(th);
+    VOWS().forEach(v=>{const k=c.l+"+"+v.l,td=document.createElement("td"),b=document.createElement("button");
+      b.className="cell"+(REC[k]?" has":"")+(k===selSyl?" sel":"");b.textContent=sylLabel(k);b.setAttribute("aria-label","Silbe "+sylLabel(k)+(REC[k]?", aufgenommen":""));
+      b.onclick=()=>{selSyl=k;renderSyl();playLaut(k.split("+"));};td.appendChild(b);tr.appendChild(td);});
+    tb.appendChild(tr);});
+  const bar=$("sylBar");bar.innerHTML="";const k=selSyl,isRec=recLetter===k,fromRepo=REC[k]&&REC[k]===repoRec[k],own=REC[k]&&!fromRepo;
+  const big=document.createElement("span");big.className="sylbig";big.innerHTML=`<span class="k">${consTxt(k.split("+")[0])}</span><span class="v">${vowTxt(k.split("+")[1])}</span>`;
+  const info=document.createElement("span");info.className="recinfo";info.innerHTML=`<b>Silbe ${sylLabel(k)}</b><small class="${REC[k]?"ok":""}">${isRec?"● nimmt auf … (max. 4 Sek.)":own?"✓ eigene Aufnahme":fromRepo?"✓ Aufnahme von GitHub":"noch keine Aufnahme"}</small>`;
+  const rb=sbtn(isRec?"■ Stopp":"● Aufnehmen",()=>startRec(k),"rec"+(isRec?" on":""));
+  const pb=sbtn("▶",()=>playLaut(k.split("+")));pb.setAttribute("aria-label","Anhören");
+  const fl=document.createElement("label");fl.className="sbtn";fl.textContent="Datei";const fi=document.createElement("input");fi.type="file";fi.accept="audio/*";fi.className="vh";
+  fi.onchange=async()=>{const f=fi.files[0];if(f)await saveAudio(k,await f.arrayBuffer());fi.value="";};fl.appendChild(fi);
+  const del=sbtn("✕",()=>{idbDel(k);delete RECBUF[k];if(repoRec[k])REC[k]=repoRec[k];else delete REC[k];renderRec();});del.disabled=!own;del.setAttribute("aria-label","Eigene Aufnahme löschen");
+  bar.append(big,info,rb,pb,fl,del);
+  const total=CONS().length*VOWS().length,done=Object.keys(REC).filter(x=>x.includes("+")).length;
+  $("sylCount").textContent=`${done} von ${total} Silben aufgenommen`;
+  const bb=$("boardRecBtn");if(bb){const bk=bb.dataset.k;bb.textContent=recLetter===bk?"■ Stopp":REC[bk]?"● Silbe neu aufnehmen":"● Silbe aufnehmen";bb.classList.toggle("on",recLetter===bk);}}
+
+$("recExport").onclick=()=>{const keys=Object.keys(REC).filter(k=>k.split("+").every(lautOf));if(!keys.length){toast("Noch keine Aufnahmen.");return;}
   const o={};keys.forEach(k=>o[k]=REC[k]);const blob=new Blob([JSON.stringify({version:1,laute:o})],{type:"application/json"});
   const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="aufnahmen.json";document.body.appendChild(a);a.click();
   setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},1500);toast("aufnahmen.json gespeichert. Lade sie auf GitHub neben index.html hoch.");};
 $("recImportFile").onchange=async e=>{const f=e.target.files[0];if(!f)return;try{const j=JSON.parse(await f.text());let n=0;
-  Object.entries(j.laute||{}).forEach(([k,v])=>{if(lautOf(k)&&/^data:audio/.test(v)){REC[k]=v;delete RECBUF[k];idbPut(k,v);n++;}});renderRec();toast(n+" Aufnahmen übernommen.");}
+  Object.entries(j.laute||{}).forEach(([k,v])=>{if(k.split("+").every(lautOf)&&/^data:audio/.test(v)){REC[k]=v;delete RECBUF[k];idbPut(k,v);n++;}});renderRec();toast(n+" Aufnahmen übernommen.");}
   catch(err){toast("Diese Datei ist keine aufnahmen.json.");}e.target.value="";};
 
 function lautSpeak(text,onend){let n=st.reps;const r=Math.max(0.3,st.rate*SLOW);
@@ -451,6 +495,7 @@ function select(i){st.sel=i;rowEls.forEach((e,j)=>e.row.classList.toggle("sel",j
 function joinDone(i){const r=st.rows[i],c=lautOf(r.c),v=lautOf(r.v);
   const cShow=sound(c),vShow=sound(v).replace("h","");
   $("result").innerHTML=`<span class="k">${cShow}</span>${c.stop?"!":"–"}<span class="v">${vShow}</span> → <strong><span class="k">${consTxt(r.c)}</span><span class="v">${vowTxt(r.v)}</span></strong>`;
+  {const k=r.c+"+"+r.v,b=sbtn(REC[k]?"● Silbe neu aufnehmen":"● Silbe aufnehmen",()=>{selSyl=k;startRec(k);},"rec");b.id="boardRecBtn";b.dataset.k=k;$("result").appendChild(b);}
   if(c.stop&&st.mode!=="synth"&&!hasRec([r.c,r.v]))speak(sylTxt(r),st.rate*0.7);
   else playLaut([r.c,r.v]);}
 function setX(i,x){const r=st.rows[i],was=r.x>=0.999;r.x=Math.min(1,Math.max(0,x));place(i);

@@ -15,7 +15,7 @@ Das Kind schiebt ein blaues Konsonanten-Plättchen zum rosa Vokal und hört die 
 - **Einstellungen für die Lehrperson**: gelernte Laute auswählen, Schreibweise (GROSS / Gross + klein / klein), Sprechtempo.
   Die Einstellungen werden im Browser gespeichert (`localStorage`).
 
-Enthaltene Laute: M A L O S I R E N U F W H T P K D B AU EI EU.
+Enthaltene Laute: M A L O S I R E N U F W H T P K D B AU EI EU Ä Ö Ü.
 
 ## Aufbau
 
@@ -57,11 +57,24 @@ Aufnahmen haben Vorrang vor dem Klang-Generator. Beim Zusammenlauten werden die 
 Die App schneidet Stille am Anfang und Ende ab und gleicht die Lautstärke an.
 Die Aufnahmen bleiben in diesem Browser gespeichert.
 
+### Silben aufnehmen (Zusammenlauten)
+
+Zusätzlich zu den einzelnen Lauten kann jede Silbe (Konsonant + Vokal) als Ganzes eingesprochen werden,
+z. B. «mmmaaa». Das sind 13 Konsonanten × 11 Vokale = 143 Silben.
+
+- **Auf dem Brett:** Sobald ein Plättchen den Vokal berührt, erscheint **● Silbe aufnehmen**. Antippen, Silbe sprechen, **■ Stopp**.
+- **In den Einstellungen:** Unter «Silben aufnehmen» zeigt eine Tabelle alle Silben. Grün = aufgenommen. Silbe antippen, dann aufnehmen.
+
+Beim Zusammenschieben gilt diese Reihenfolge:
+1. eigene Silbenaufnahme, 2. die beiden einzelnen Laut-Aufnahmen übergeblendet, 3. Klang-Generator bzw. Gerätestimme.
+
+Tipp: Nicht alle 143 Silben sind nötig. Am besten zuerst die Silben der Laute aufnehmen, die gerade geübt werden.
+
 ### Für alle Geräte (z. B. alle iPads der Klasse)
 
 1. **Alle exportieren** tippen. Es entsteht die Datei `aufnahmen.json`.
 2. Diese Datei im Repository neben `index.html` hochladen.
-3. Ab dann lädt jedes Gerät die Aufnahmen automatisch. Eigene Aufnahmen auf einem Gerät haben dort Vorrang.
+3. Ab dann lädt jedes Gerät die Aufnahmen (Laute und Silben) automatisch. Eigene Aufnahmen auf einem Gerät haben dort Vorrang.
 
 Mit **Importieren** lässt sich eine `aufnahmen.json` auch direkt auf einem Gerät einlesen.
 
@@ -93,3 +106,6 @@ Keine Buchstabennamen («em», «es»), sondern den Laut. Kurze Laute ohne «e»
 | AU | au | Auto |
 | EI | ei | Ei |
 | EU | eu | Eule |
+| Ä | ääää | Äpfel |
+| Ö | öööö | Öl |
+| Ü | üüüü | Überraschung |
