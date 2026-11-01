@@ -138,6 +138,14 @@ label.btn{display:inline-flex;align-items:center;position:relative}
 .cell.sel{outline:3px solid var(--join);outline-offset:1px}
 .sylbig{font:700 2rem var(--f-letter);min-width:72px}
 .result .sbtn{margin-left:8px;vertical-align:middle;font-family:var(--f-ui)}
+
+/* Passwortschutz */
+.lockbox{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px}
+.lockbox form{display:flex;flex-direction:column;gap:10px}
+.lockbox input{font:1rem var(--f-ui);padding:12px;border-radius:10px;border:2px solid var(--line);background:var(--paper);color:var(--ink);max-width:320px}
+.lockbox input:focus-visible{outline:3px solid var(--join);outline-offset:1px}
+.lockerr{color:var(--rec);margin:0;min-height:1.2em;font-weight:700}
+.hashinfo code{word-break:break-all;font-size:.75rem;background:var(--chip);padding:2px 4px;border-radius:4px}
 .toast{position:fixed;left:50%;bottom:calc(18px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--paper);padding:10px 16px;border-radius:12px;font-size:.9rem;max-width:calc(100% - 32px)}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 
@@ -192,9 +200,11 @@ img{max-width:100%}
     <p class="count" id="count"></p>
   </section>
 
-  <details>
+  <details id="teacher">
     <summary>Einstellungen für die Lehrperson</summary>
     <div class="set">
+      <div class="actions"><button class="btn" id="lockNow">🔒 Sperren</button><button class="btn" id="pwChange">Passwort ändern</button></div>
+      <p class="hint hashinfo" id="hashInfo" style="font-size:.8rem" hidden></p>
       <div class="pickrow"><label>Gelernte Laute (Brett und Wörter nutzen nur diese)</label><div class="chips" id="learnChips"></div></div>
       <div class="pickrow"><label>Schreibweise</label><div class="seg" id="caseSeg">
         <button data-c="upper">GROSS</button>
@@ -229,6 +239,17 @@ img{max-width:100%}
       </div>
     </div>
   </details>
+  <div id="lockBox" class="lockbox" hidden>
+    <form id="lockForm">
+      <p id="lockMsg" class="hint"></p>
+      <label for="pw1" class="vh">Passwort</label>
+      <input type="password" id="pw1" autocomplete="current-password" placeholder="Passwort">
+      <label for="pw2" class="vh">Passwort wiederholen</label>
+      <input type="password" id="pw2" autocomplete="new-password" placeholder="Passwort wiederholen" hidden>
+      <div class="actions"><button class="btn main" type="submit" id="lockGo">Öffnen</button><button class="btn" type="button" id="lockCancel">Abbrechen</button></div>
+      <p id="lockErr" class="lockerr" aria-live="polite"></p>
+    </form>
+  </div>
 </div>
 <div class="toast" id="toast" hidden></div>
 <script>
@@ -559,6 +580,34 @@ function renderSeg(){document.querySelectorAll("#modeSeg button").forEach(x=>x.s
 function renderAll(){renderSeg();renderRec();renderLaute();renderBoard();renderTray();renderLearn();if(st.wi>=0)renderWord();}
 renderAll();
 loadRecs();
+/* ---------- Passwortschutz für den Lehrerbereich ---------- */
+/* Optional: gleiches Passwort auf allen Geräten. Den Code aus den Einstellungen hier eintragen. */
+const PASSWORT_HASH="";
+async function sha(t){try{const b=await crypto.subtle.digest("SHA-256",new TextEncoder().encode("lautbrett:"+t));return [...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,"0")).join("");}
+  catch(e){let h=0;for(const c of "lautbrett:"+t)h=(h*31+c.charCodeAt(0))|0;return "x"+(h>>>0).toString(16);}}
+function getHash(){if(PASSWORT_HASH)return PASSWORT_HASH;try{return localStorage.getItem("lautbrett-pw")||""}catch(e){return ""}}
+let unlocked=false,lockMode="open";const T=$("teacher");
+function showLock(mode){lockMode=mode;$("lockBox").hidden=false;$("pw2").hidden=mode==="open";$("lockErr").textContent="";$("pw1").value="";$("pw2").value="";
+  $("lockMsg").textContent=mode==="open"?"Der Lehrerbereich ist geschützt. Bitte Passwort eingeben.":mode==="set"?"Lege zuerst ein Passwort für den Lehrerbereich fest (mindestens 4 Zeichen).":"Neues Passwort festlegen (mindestens 4 Zeichen).";
+  $("pw1").setAttribute("autocomplete",mode==="open"?"current-password":"new-password");
+  $("lockGo").textContent=mode==="open"?"Öffnen":"Passwort speichern";setTimeout(()=>$("pw1").focus(),0);}
+function unlock(){unlocked=true;$("lockBox").hidden=true;T.open=true;showHash();}
+function lock(){unlocked=false;T.open=false;$("lockBox").hidden=true;}
+function showHash(){const h=getHash(),el=$("hashInfo");if(!h||PASSWORT_HASH){el.hidden=true;return;}
+  el.hidden=false;el.innerHTML=`Gleiches Passwort auf allen Geräten: Diesen Code in <b>index.html</b> bei <b>PASSWORT_HASH</b> eintragen: <code>${h}</code>`;}
+T.querySelector("summary").addEventListener("click",ev=>{if(unlocked)return;ev.preventDefault();if($("lockBox").hidden)showLock(getHash()?"open":"set");else $("lockBox").hidden=true;});
+T.addEventListener("toggle",()=>{if(!T.open)lock();else if(!unlocked)T.open=false;});
+$("lockCancel").onclick=()=>{$("lockBox").hidden=true;};
+$("lockNow").onclick=()=>{lock();toast("Lehrerbereich gesperrt.");};
+$("pwChange").onclick=()=>{if(PASSWORT_HASH){toast("Das Passwort ist fest in index.html eingetragen und kann nur dort geändert werden.");return;}T.open=false;unlocked=false;showLock("change");};
+$("lockForm").addEventListener("submit",async ev=>{ev.preventDefault();const a=$("pw1").value,b=$("pw2").value;
+  if(lockMode==="open"){if(a&&await sha(a)===getHash())unlock();else{$("lockErr").textContent="Falsches Passwort. Bitte nochmals versuchen.";$("pw1").select();}return;}
+  if(a.length<4){$("lockErr").textContent="Das Passwort braucht mindestens 4 Zeichen.";return;}
+  if(a!==b){$("lockErr").textContent="Die beiden Eingaben sind nicht gleich.";return;}
+  try{localStorage.setItem("lautbrett-pw",await sha(a));}catch(e){$("lockErr").textContent="Dieser Browser kann das Passwort nicht speichern.";return;}
+  toast("Passwort gespeichert.");unlock();});
+document.addEventListener("visibilitychange",()=>{if(document.hidden&&unlocked)lock();});
+
 if(document.fonts)document.fonts.ready.then(placeAll);
 </script>
 </body>

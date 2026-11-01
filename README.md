@@ -109,3 +109,31 @@ Keine Buchstabennamen («em», «es»), sondern den Laut. Kurze Laute ohne «e»
 | Ä | ääää | Äpfel |
 | Ö | öööö | Öl |
 | Ü | üüüü | Überraschung |
+
+## Passwort für den Lehrerbereich
+
+Beim ersten Öffnen von **Einstellungen für die Lehrperson** legt man ein Passwort fest (mindestens 4 Zeichen).
+Danach fragt die App bei jedem Öffnen danach.
+
+- **🔒 Sperren** schliesst den Bereich sofort. Er sperrt sich auch selbst, wenn man ihn zuklappt oder die App verlässt.
+- **Passwort ändern** legt ein neues Passwort fest.
+
+Das Passwort gilt zuerst nur auf dem Gerät, auf dem es festgelegt wurde.
+
+### Gleiches Passwort auf allen Geräten
+
+1. Auf einem Gerät das Passwort festlegen und den Lehrerbereich öffnen.
+2. Dort steht ein langer Code (der verschlüsselte Fingerabdruck des Passworts, nicht das Passwort selbst).
+3. In `index.html` die Zeile `const PASSWORT_HASH="";` suchen und den Code zwischen die Anführungszeichen setzen:
+   `const PASSWORT_HASH="28b6990…";`
+4. Datei auf GitHub speichern. Ab dann gilt dieses Passwort auf allen Geräten und kann nur noch dort geändert werden.
+
+### Passwort vergessen?
+
+- Ohne festen Code: In den Browser-Einstellungen die Website-Daten der App löschen. Dabei gehen auch die Einstellungen und die Aufnahmen auf diesem Gerät verloren (Aufnahmen aus `aufnahmen.json` bleiben).
+- Mit festem Code: In `index.html` wieder `const PASSWORT_HASH="";` eintragen und neu festlegen.
+
+### Wichtig
+
+Der Schutz hält Kinder von den Einstellungen fern. Er ist keine echte Sicherheit: Die App läuft ganz im Browser,
+und wer sich mit Webseiten auskennt, kann ihn umgehen. Für eine Lern-App reicht das; schützenswerte Daten gehören nicht hinein.
