@@ -25,6 +25,8 @@ Enthaltene Laute: M A L O S I R E N U F W H T P K D B AU EI EU Ä Ö Ü.
 index.html      die ganze App in einer Datei (Gestaltung, Logik, Laut- und Wortlisten)
 .nojekyll       damit GitHub Pages die Datei unverändert ausliefert
 aufnahmen.json  (optional) eigene Lautaufnahmen für alle Geräte
+Lautbrett_Benutzerdokumentation.pdf   Benutzerdokumentation (im Lehrerbereich verlinkt)
+Lautbrett_Benutzerdokumentation.docx  dieselbe als Word-Datei
 ```
 
 Keine Abhängigkeiten, kein Build-Schritt. Schriften: Andika und Atkinson Hyperlegible über Google Fonts.
