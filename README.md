@@ -4,6 +4,8 @@ Eine kleine Web-App für das **erste Zusammenlauten** im Erstleseunterricht.
 Sie ist dem Silbenbrett mit Schiebern aus dem Schulmaterial nachempfunden:
 Das Kind schiebt ein blaues Konsonanten-Plättchen zum rosa Vokal und hört die Silbe.
 
+**App öffnen:** https://mikestaubswiss.github.io/lautbrett-app/
+
 ## Funktionen
 
 - **Laute**: Buchstaben antippen und den Laut hören (nicht den Buchstabennamen), mit Anlautbild.
@@ -62,7 +64,7 @@ Die Aufnahmen bleiben in diesem Browser gespeichert.
 Zusätzlich zu den einzelnen Lauten kann jede Silbe (Konsonant + Vokal) als Ganzes eingesprochen werden,
 z. B. «mmmaaa». Das sind 13 Konsonanten × 11 Vokale = 143 Silben.
 
-- **Auf dem Brett:** Sobald ein Plättchen den Vokal berührt, erscheint **● Silbe aufnehmen**. Antippen, Silbe sprechen, **■ Stopp**.
+- **Auf dem Brett** (nur wenn der Lehrerbereich entsperrt ist): Sobald ein Plättchen den Vokal berührt, erscheint **● Silbe aufnehmen**. Antippen, Silbe sprechen, **■ Stopp**.
 - **In den Einstellungen:** Unter «Silben aufnehmen» zeigt eine Tabelle alle Silben. Grün = aufgenommen. Silbe antippen, dann aufnehmen.
 
 Beim Zusammenschieben gilt diese Reihenfolge:

@@ -146,6 +146,7 @@ label.btn{display:inline-flex;align-items:center;position:relative}
 .lockbox input:focus-visible{outline:3px solid var(--join);outline-offset:1px}
 .lockerr{color:var(--rec);margin:0;min-height:1.2em;font-weight:700}
 .hashinfo code{word-break:break-all;font-size:.75rem;background:var(--chip);padding:2px 4px;border-radius:4px}
+a.doclink{text-decoration:none;display:inline-flex;align-items:center}
 .toast{position:fixed;left:50%;bottom:calc(18px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--paper);padding:10px 16px;border-radius:12px;font-size:.9rem;max-width:calc(100% - 32px)}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 
@@ -204,6 +205,7 @@ img{max-width:100%}
     <summary>Einstellungen für die Lehrperson</summary>
     <div class="set">
       <div class="actions"><button class="btn" id="lockNow">🔒 Sperren</button><button class="btn" id="pwChange">Passwort ändern</button></div>
+      <div class="actions"><a class="btn doclink" href="Lautbrett_Benutzerdokumentation.pdf" target="_blank" rel="noopener">📖 Benutzerdokumentation (PDF)</a><a class="btn doclink" href="Lautbrett_Benutzerdokumentation.docx" target="_blank" rel="noopener">Word-Datei</a></div>
       <p class="hint hashinfo" id="hashInfo" style="font-size:.8rem" hidden></p>
       <div class="pickrow"><label>Gelernte Laute (Brett und Wörter nutzen nur diese)</label><div class="chips" id="learnChips"></div></div>
       <div class="pickrow"><label>Schreibweise</label><div class="seg" id="caseSeg">
