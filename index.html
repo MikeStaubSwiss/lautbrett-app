@@ -43,6 +43,7 @@ nav{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;background:var(--ch
 nav button{font:700 1rem var(--f-ui);border:0;border-radius:10px;padding:12px 6px;background:transparent;color:var(--muted);cursor:pointer}
 nav button[aria-selected="true"]{background:var(--card);color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.15)}
 button:focus-visible{outline:3px solid var(--join);outline-offset:2px}
+.tile:focus-visible,.tile:focus{outline:1.5px solid #8a939e;outline-offset:1px}
 .panel{background:var(--card);border-radius:18px;padding:18px;box-shadow:0 6px 20px rgba(20,40,60,.07);display:flex;flex-direction:column;gap:16px}
 .hint{margin:0;color:var(--muted);font-size:.95rem;max-width:60ch}
 .v{color:var(--vokal)} .k{color:var(--kons)}
@@ -68,7 +69,7 @@ button:focus-visible{outline:3px solid var(--join);outline-offset:2px}
 .track .tile.drag{cursor:grabbing;box-shadow:inset 0 -3px 0 rgba(0,0,0,.08),0 8px 14px rgba(0,0,0,.25);z-index:2}
 .row .arc{position:absolute;right:3px;bottom:-9px;height:16px;border:3px solid var(--join);border-top:0;border-radius:0 0 999px 999px;opacity:0;transition:opacity .2s;pointer-events:none}
 .row.joined .arc{opacity:1}
-.row.joined .tile.v{box-shadow:0 0 0 3px var(--join),0 2px 3px rgba(0,0,0,.18)}
+.row.joined .tile.v{box-shadow:0 0 0 1.5px #8a939e,0 2px 3px rgba(0,0,0,.18)}
 
 .tray{display:flex;flex-direction:column;gap:8px}
 .tray label{font-size:.8rem;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:700}
@@ -88,7 +89,7 @@ button:focus-visible{outline:3px solid var(--join);outline-offset:2px}
 .laut b{font-size:2.4rem;line-height:1}
 .laut span{font-size:1.6rem;line-height:1.2}
 .laut small{font:400 .8rem var(--f-ui);color:var(--muted)}
-.laut.on{border-color:var(--join)}
+.laut.on{border-color:#8a939e;border-width:1.5px}
 
 /* Wörter */
 .word{display:flex;justify-content:center;flex-wrap:wrap;gap:4px 10px;padding:18px 0 4px}
@@ -147,6 +148,18 @@ label.btn{display:inline-flex;align-items:center;position:relative}
 .lockerr{color:var(--rec);margin:0;min-height:1.2em;font-weight:700}
 .hashinfo code{word-break:break-all;font-size:.75rem;background:var(--chip);padding:2px 4px;border-radius:4px}
 a.doclink{text-decoration:none;display:inline-flex;align-items:center}
+
+/* Beispielwörter */
+details.sub{margin-top:6px;padding:10px 12px}
+details.sub summary{font-weight:700}
+.exlist{display:flex;flex-direction:column;gap:8px;margin-top:10px}
+.exrow{display:flex;gap:6px;align-items:center;flex-wrap:nowrap}
+.exrow .tile{--w:36px}
+.exrow input{font:1rem var(--f-ui);padding:8px 10px;border-radius:8px;border:2px solid var(--line);background:var(--paper);color:var(--ink);min-width:0}
+.exrow input:focus-visible{outline:3px solid var(--join);outline-offset:1px}
+.exrow input.w{flex:1 1 0;width:0}
+.exrow input.e{width:52px;flex:none;text-align:center}
+.exrow .sbtn{flex:none;padding:8px}
 .toast{position:fixed;left:50%;bottom:calc(18px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--paper);padding:10px 16px;border-radius:12px;font-size:.9rem;max-width:calc(100% - 32px)}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 
@@ -208,6 +221,12 @@ img{max-width:100%}
       <div class="actions"><a class="btn doclink" href="Lautbrett_Benutzerdokumentation.pdf" target="_blank" rel="noopener">📖 Benutzerdokumentation (PDF)</a></div>
       <p class="hint hashinfo" id="hashInfo" style="font-size:.8rem" hidden></p>
       <div class="pickrow"><label>Gelernte Laute (Brett und Wörter nutzen nur diese)</label><div class="chips" id="learnChips"></div></div>
+      <div class="pickrow"><label>Beispielwörter («wie in …»)</label>
+        <details class="sub"><summary>Beispielwörter und Bilder anpassen</summary>
+          <p class="hint" style="font-size:.85rem;margin-top:8px">Das Wort erscheint auf der Lautkarte und wird nach dem Laut vorgesprochen. Als Bild ein Emoji eingeben (z. B. 🐭). Leer lassen = Vorgabe.</p>
+          <div id="exList" class="exlist"></div>
+        </details>
+      </div>
       <div class="pickrow"><label>Schreibweise</label><div class="seg" id="caseSeg">
         <button data-c="upper">GROSS</button>
         <button data-c="mixed">Gross + klein</button>
@@ -285,10 +304,10 @@ const WOERTER = [
 const DIPS=["AU","EI","EU"];
 function tokens(w){const out=[];for(let i=0;i<w.length;){const two=w.slice(i,i+2);if(DIPS.includes(two)){out.push(two);i+=2;}else{out.push(w[i]);i++;}}return out;}
 
-const st={view:"brett",learned:new Set("MALOSIRENUFW".split("")),case:"mixed",rate:0.65,reps:1,len:6,mode:"synth",wi:-1,sel:1,
+const st={view:"brett",learned:new Set("MALOSIRENUFW".split("")),case:"mixed",rate:0.65,reps:1,len:6,mode:"synth",ex:{},wi:-1,sel:1,
   rows:[{c:"M",v:"E",x:1},{c:"L",v:"A",x:0},{c:"W",v:"I",x:0},{c:"S",v:"O",x:0},{c:"F",v:"U",x:0}]};
-try{const s=JSON.parse(localStorage.getItem("lautbrett")||"null");if(s){st.learned=new Set(s.learned);st.case=s.case;if(s.reps)st.reps=s.reps;if(s.len)st.len=s.len;if(s.mode)st.mode=s.mode;st.rate=Math.min(s.rate,0.95);if(s.rate===0.75)st.rate=0.65;if(s.rate===0.55)st.rate=0.45;}}catch(e){}
-const save=()=>{try{localStorage.setItem("lautbrett",JSON.stringify({learned:[...st.learned],case:st.case,rate:st.rate,reps:st.reps,len:st.len,mode:st.mode}))}catch(e){}};
+try{const s=JSON.parse(localStorage.getItem("lautbrett")||"null");if(s){st.learned=new Set(s.learned);st.case=s.case;if(s.reps)st.reps=s.reps;if(s.len)st.len=s.len;if(s.mode)st.mode=s.mode;if(s.ex)st.ex=s.ex;st.rate=Math.min(s.rate,0.95);if(s.rate===0.75)st.rate=0.65;if(s.rate===0.55)st.rate=0.45;}}catch(e){}
+const save=()=>{try{localStorage.setItem("lautbrett",JSON.stringify({learned:[...st.learned],case:st.case,rate:st.rate,reps:st.reps,len:st.len,mode:st.mode,ex:st.ex}))}catch(e){}};
 const $=id=>document.getElementById(id);
 const lautOf=l=>LAUTE.find(x=>x.l===l);
 const reduce=()=>matchMedia("(prefers-reduced-motion:reduce)").matches;
@@ -380,7 +399,7 @@ function idbAll(){return new Promise(res=>{const out={};if(!rdb)return res(out);
 function idbPut(k,v){try{if(rdb)rdb.transaction("rec","readwrite").objectStore("rec").put(v,k)}catch(e){}}
 function idbDel(k){try{if(rdb)rdb.transaction("rec","readwrite").objectStore("rec").delete(k)}catch(e){}}
 async function loadRecs(){await idb();const local=await idbAll();
-  try{const r=await fetch("aufnahmen.json",{cache:"no-store"});if(r.ok){const j=await r.json();repoRec=j.laute||{};}}catch(e){}
+  try{const r=await fetch("aufnahmen.json",{cache:"no-store"});if(r.ok){const j=await r.json();repoRec=j.laute||{};if(j.beispiele)Object.entries(j.beispiele).forEach(([k,v])=>{if(lautOf(k)&&!st.ex[k])st.ex[k]=v;});applyEx();renderEx();renderLaute();}}catch(e){}
   Object.assign(REC,repoRec,local);renderRec();}
 function toWav(buf){const sr=buf.sampleRate,d=buf.getChannelData(0),n=d.length,ab=new ArrayBuffer(44+n*2),v=new DataView(ab);
   const w=(o,s)=>{for(let i=0;i<s.length;i++)v.setUint8(o+i,s.charCodeAt(i))};
@@ -464,12 +483,12 @@ function renderSyl(){const tb=$("sylMatrix");if(!tb)return;tb.innerHTML="";
   $("sylCount").textContent=`${done} von ${total} Silben aufgenommen`;
   const bb=$("boardRecBtn");if(bb){const bk=bb.dataset.k;bb.textContent=recLetter===bk?"■ Stopp":REC[bk]?"● Silbe neu aufnehmen":"● Silbe aufnehmen";bb.classList.toggle("on",recLetter===bk);}}
 
-$("recExport").onclick=()=>{const keys=Object.keys(REC).filter(k=>k.split("+").every(lautOf));if(!keys.length){toast("Noch keine Aufnahmen.");return;}
-  const o={};keys.forEach(k=>o[k]=REC[k]);const blob=new Blob([JSON.stringify({version:1,laute:o})],{type:"application/json"});
+$("recExport").onclick=()=>{const keys=Object.keys(REC).filter(k=>k.split("+").every(lautOf));if(!keys.length&&!Object.keys(st.ex).length){toast("Noch keine Aufnahmen.");return;}
+  const o={};keys.forEach(k=>o[k]=REC[k]);const blob=new Blob([JSON.stringify({version:1,laute:o,beispiele:st.ex})],{type:"application/json"});
   const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="aufnahmen.json";document.body.appendChild(a);a.click();
   setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},1500);toast("aufnahmen.json gespeichert. Lade sie auf GitHub neben index.html hoch.");};
 $("recImportFile").onchange=async e=>{const f=e.target.files[0];if(!f)return;try{const j=JSON.parse(await f.text());let n=0;
-  Object.entries(j.laute||{}).forEach(([k,v])=>{if(k.split("+").every(lautOf)&&/^data:audio/.test(v)){REC[k]=v;delete RECBUF[k];idbPut(k,v);n++;}});renderRec();toast(n+" Aufnahmen übernommen.");}
+  if(j.beispiele){Object.assign(st.ex,j.beispiele);applyEx();save();renderEx();renderLaute();}Object.entries(j.laute||{}).forEach(([k,v])=>{if(k.split("+").every(lautOf)&&/^data:audio/.test(v)){REC[k]=v;delete RECBUF[k];idbPut(k,v);n++;}});renderRec();toast(n+" Aufnahmen übernommen.");}
   catch(err){toast("Diese Datei ist keine aufnahmen.json.");}e.target.value="";};
 
 function lautSpeak(text,onend){let n=st.reps;const r=Math.max(0.3,st.rate*SLOW);
@@ -579,7 +598,23 @@ function renderSeg(){document.querySelectorAll("#modeSeg button").forEach(x=>x.s
   document.querySelectorAll("#lenSeg button").forEach(x=>x.setAttribute("aria-pressed",+x.dataset.l===st.len));document.querySelectorAll("#caseSeg button").forEach(x=>x.setAttribute("aria-pressed",x.dataset.c===st.case));
   document.querySelectorAll("#rateSeg button").forEach(x=>x.setAttribute("aria-pressed",+x.dataset.r===st.rate));}
 
-function renderAll(){renderSeg();renderRec();renderLaute();renderBoard();renderTray();renderLearn();if(st.wi>=0)renderWord();}
+
+/* ---------- Beispielwörter anpassen ---------- */
+function applyEx(){LAUTE.forEach(x=>{if(x.w0===undefined){x.w0=x.w;x.e0=x.e;}const o=st.ex[x.l]||{};x.w=o.w||x.w0;x.e=o.e||x.e0;});}
+let exTimer=null;
+function exChanged(){applyEx();save();clearTimeout(exTimer);exTimer=setTimeout(()=>{renderLaute();renderRec();},250);}
+function renderEx(){const el=$("exList");if(!el)return;el.innerHTML="";
+  LAUTE.forEach(x=>{const row=document.createElement("div");row.className="exrow";
+    const t=document.createElement("span");t.className="tile "+(x.v?"v":"k")+(x.l.length>1?" wide":"");t.textContent=x.v?vowTxt(x.l):consTxt(x.l);
+    const o=st.ex[x.l]||{};
+    const w=document.createElement("input");w.className="w";w.id="ex-w-"+x.l;w.type="text";w.maxLength=30;w.placeholder=x.w0;w.value=o.w||"";w.setAttribute("aria-label","Beispielwort für "+x.l);
+    const e=document.createElement("input");e.className="e";e.id="ex-e-"+x.l;e.type="text";e.maxLength=8;e.placeholder=x.e0;e.value=o.e||"";e.setAttribute("aria-label","Bild für "+x.l);
+    const upd=()=>{const nw=w.value.trim(),ne=e.value.trim();if(nw||ne)st.ex[x.l]={w:nw,e:ne};else delete st.ex[x.l];exChanged();};
+    w.oninput=upd;e.oninput=upd;
+    const hear=sbtn("▶",()=>playLaut([x.l],()=>setTimeout(()=>speak(x.w),400)));hear.setAttribute("aria-label","Laut und Wort anhören");
+    const rs=sbtn("Vorgabe",()=>{delete st.ex[x.l];w.value="";e.value="";exChanged();});rs.textContent="↺";rs.title="Vorgabe wiederherstellen";rs.setAttribute("aria-label","Vorgabe wiederherstellen");
+    row.append(t,w,e,hear,rs);el.appendChild(row);});}
+function renderAll(){applyEx();renderEx();renderSeg();renderRec();renderLaute();renderBoard();renderTray();renderLearn();if(st.wi>=0)renderWord();}
 renderAll();
 loadRecs();
 /* ---------- Passwortschutz für den Lehrerbereich ---------- */
