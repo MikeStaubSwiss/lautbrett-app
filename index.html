@@ -151,6 +151,8 @@ a.doclink{text-decoration:none;display:inline-flex;align-items:center}
 
 /* Beispielwörter */
 details.sub{margin-top:6px;padding:10px 12px}
+details.sub>.set,details.sub>.reclist,details.sub>.matrix-wrap,details.sub>.actions,details.sub>.recrow{margin-top:10px}
+details.sub>.hint{margin-top:8px}
 details.sub summary{font-weight:700}
 .exlist{display:flex;flex-direction:column;gap:8px;margin-top:10px}
 .exrow{display:flex;gap:6px;align-items:center;flex-wrap:nowrap}
@@ -160,6 +162,25 @@ details.sub summary{font-weight:700}
 .exrow input.w{flex:1 1 0;width:0}
 .exrow input.e{width:52px;flex:none;text-align:center}
 .exrow .sbtn{flex:none;padding:8px}
+
+/* Lautkarten drucken */
+.chkl{display:inline-flex;align-items:center;gap:6px;font:400 .95rem var(--f-ui);color:var(--ink);cursor:pointer}
+.pickrow label.chkl{text-transform:none;letter-spacing:0;font-weight:400;color:var(--ink);font-size:.95rem}
+.chkl input{width:18px;height:18px}
+#printSheet{display:none}
+@media print{
+  @page{size:A4;margin:10mm}
+  :root{padding:0!important}
+  body{background:#fff!important;padding:0!important;margin:0}
+  body::before{display:none!important}
+  .wrap,.toast,#lockBox{display:none!important}
+  #printSheet{display:grid!important;grid-template-columns:repeat(3,1fr);-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .pcard{break-inside:avoid;height:66mm;border:1px dashed #aaa;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2mm;color:#1f2a3a;font-family:var(--f-letter)}
+  .pcard .pl{font-size:46pt;font-weight:700;line-height:1}
+  .pcard .pl.k{color:#1452a8}.pcard .pl.v{color:#c2185b}
+  .pcard .pe{font-size:38pt;line-height:1.1}
+  .pcard .pw{font-size:16pt}
+}
 .toast{position:fixed;left:50%;bottom:calc(18px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--paper);padding:10px 16px;border-radius:12px;font-size:.9rem;max-width:calc(100% - 32px)}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 
@@ -217,8 +238,7 @@ img{max-width:100%}
   <details id="teacher">
     <summary>Einstellungen für die Lehrperson</summary>
     <div class="set">
-      <div class="actions"><button class="btn" id="lockNow">🔒 Sperren</button><button class="btn" id="pwChange">Passwort ändern</button></div>
-      <div class="actions"><a class="btn doclink" href="Lautbrett_Benutzerdokumentation.pdf" target="_blank" rel="noopener">📖 Benutzerdokumentation (PDF)</a></div>
+      <div class="actions"><button class="btn" id="lockNow">🔒 Sperren</button><button class="btn" id="pwChange">Passwort ändern</button><a class="btn doclink" href="Lautbrett_Benutzerdokumentation.pdf" target="_blank" rel="noopener">📖 Benutzerdokumentation</a></div>
       <p class="hint hashinfo" id="hashInfo" style="font-size:.8rem" hidden></p>
       <div class="pickrow"><label>Gelernte Laute (Brett und Wörter nutzen nur diese)</label><div class="chips" id="learnChips"></div></div>
       <div class="pickrow"><label>Beispielwörter («wie in …»)</label>
@@ -226,37 +246,54 @@ img{max-width:100%}
           <p class="hint" style="font-size:.85rem;margin-top:8px">Das Wort erscheint auf der Lautkarte und wird nach dem Laut vorgesprochen. Als Bild ein Emoji eingeben (z. B. 🐭). Leer lassen = Vorgabe.</p>
           <div id="exList" class="exlist"></div>
         </details>
+        <div class="actions" style="margin-top:8px"><button class="btn" id="printEx">🖨 Lautkarten drucken</button><label class="chkl" for="printLearned"><input type="checkbox" id="printLearned"> nur gelernte Laute</label></div>
       </div>
-      <div class="pickrow"><label>Schreibweise</label><div class="seg" id="caseSeg">
-        <button data-c="upper">GROSS</button>
-        <button data-c="mixed">Gross + klein</button>
-        <button data-c="lower">klein</button></div></div>
-      <div class="pickrow"><label>Sprechtempo</label><div class="seg" id="rateSeg">
-        <button data-r="0.45">sehr langsam</button>
-        <button data-r="0.65">langsam</button>
-        <button data-r="0.95">normal</button></div></div>
-      <div class="pickrow"><label>Laut sprechen</label><div class="seg" id="repSeg">
-        <button data-n="1">1×</button>
-        <button data-n="2">2×</button>
-        <button data-n="3">3×</button></div></div>
-      <div class="pickrow"><label>Laut dehnen</label><div class="seg" id="lenSeg">
-        <button data-l="2">kurz</button>
-        <button data-l="6">mittel</button>
-        <button data-l="10">lang</button></div></div>
-      <div class="pickrow"><label>Laute erzeugen mit</label><div class="seg" id="modeSeg">
-        <button data-m="synth">Klang-Generator (genaue Länge)</button>
-        <button data-m="tts">Gerätestimme</button></div></div>
-      <p class="hint" style="font-size:.85rem">Der Klang-Generator dehnt jeden Laut genau so lang wie eingestellt und zieht ihn fliessend in den Vokal. Ganze Wörter spricht immer die Gerätestimme.</p>
+      <div class="pickrow"><label>Ton und Schrift</label>
+        <details class="sub"><summary>Schreibweise, Sprechtempo und Laute einstellen</summary>
+          <div class="set">
+          <div class="pickrow"><label>Schreibweise</label><div class="seg" id="caseSeg">
+            <button data-c="upper">GROSS</button>
+            <button data-c="mixed">Gross + klein</button>
+            <button data-c="lower">klein</button></div></div>
+          <div class="pickrow"><label>Sprechtempo</label><div class="seg" id="rateSeg">
+            <button data-r="0.45">sehr langsam</button>
+            <button data-r="0.65">langsam</button>
+            <button data-r="0.95">normal</button></div></div>
+          <div class="pickrow"><label>Laut sprechen</label><div class="seg" id="repSeg">
+            <button data-n="1">1×</button>
+            <button data-n="2">2×</button>
+            <button data-n="3">3×</button></div></div>
+          <div class="pickrow"><label>Laut dehnen</label><div class="seg" id="lenSeg">
+            <button data-l="2">kurz</button>
+            <button data-l="6">mittel</button>
+            <button data-l="10">lang</button></div></div>
+          <div class="pickrow"><label>Laute erzeugen mit</label><div class="seg" id="modeSeg">
+            <button data-m="synth">Klang-Generator (genaue Länge)</button>
+            <button data-m="tts">Gerätestimme</button></div></div>
+          <p class="hint" style="font-size:.85rem">Der Klang-Generator dehnt jeden Laut genau so lang wie eingestellt und zieht ihn fliessend in den Vokal. Ganze Wörter spricht immer die Gerätestimme.</p>
+          </div>
+        </details>
+      </div>
       <div class="pickrow"><label>Eigene Aufnahmen</label>
-        <p class="hint" style="font-size:.85rem">Sprich jeden Laut so, wie die Kinder ihn lauten sollen: gedehnt bei M, S, A usw. (etwa 1 bis 2 Sekunden), kurz bei T, P, K, D, B, ohne «e» dahinter. Stille am Anfang und Ende wird abgeschnitten, die Lautstärke angeglichen. Aufnahmen haben Vorrang vor dem Klang-Generator.</p>
-        <p class="count" id="recCount" style="text-align:left"></p>
-        <div id="recList" class="reclist"></div>
-        <p class="sublabel">Silben aufnehmen (Zusammenlauten)</p>
-        <p class="hint" style="font-size:.85rem">Tippe eine Silbe an und nimm sie auf, zum Beispiel «mmmaaa». Wenn ein Kind auf dem Brett diesen Konsonanten zum Vokal schiebt, hört es deine Silbe. Grün = aufgenommen. Ohne Silbenaufnahme werden die einzelnen Laute verbunden.</p>
-        <p class="count" id="sylCount" style="text-align:left"></p>
-        <div id="sylBar" class="recrow"></div>
-        <div class="matrix-wrap"><table id="sylMatrix" class="matrix"></table></div>
-        <div class="actions"><button class="btn" id="recExport">Alle exportieren (aufnahmen.json)</button><label class="btn">Importieren<input type="file" id="recImportFile" accept=".json,application/json" class="vh"></label></div>
+        <details class="sub"><summary>Laute selbst aufnehmen</summary>
+          <p class="hint" style="font-size:.85rem">Sprich jeden Laut so, wie die Kinder ihn lauten sollen: gedehnt bei M, S, A usw. (etwa 1 bis 2 Sekunden), kurz bei T, P, K, D, B, ohne «e» dahinter. Stille am Anfang und Ende wird abgeschnitten, die Lautstärke angeglichen. Aufnahmen haben Vorrang vor dem Klang-Generator.</p>
+          <p class="count" id="recCount" style="text-align:left"></p>
+          <div id="recList" class="reclist"></div>
+        </details>
+      </div>
+      <div class="pickrow"><label>Silben aufnehmen (Zusammenlauten)</label>
+        <details class="sub"><summary>Silben selbst aufnehmen</summary>
+          <p class="hint" style="font-size:.85rem">Tippe eine Silbe an und nimm sie auf, zum Beispiel «mmmaaa». Wenn ein Kind auf dem Brett diesen Konsonanten zum Vokal schiebt, hört es deine Silbe. Grün = aufgenommen. Ohne Silbenaufnahme werden die einzelnen Laute verbunden.</p>
+          <p class="count" id="sylCount" style="text-align:left"></p>
+          <div id="sylBar" class="recrow"></div>
+          <div class="matrix-wrap"><table id="sylMatrix" class="matrix"></table></div>
+        </details>
+      </div>
+      <div class="pickrow"><label>Aufnahmen exportieren</label>
+        <details class="sub"><summary>Aufnahmen exportieren und importieren</summary>
+          <p class="hint" style="font-size:.85rem;margin-top:8px">«Alle exportieren» speichert alle Laut- und Silbenaufnahmen und die Beispielwörter in der Datei aufnahmen.json. Diese Datei neben index.html auf GitHub hochladen, dann haben alle Geräte die Aufnahmen. «Importieren» liest eine aufnahmen.json direkt auf diesem Gerät ein.</p>
+          <div class="actions"><button class="btn" id="recExport">Alle exportieren (aufnahmen.json)</button><label class="btn">Importieren<input type="file" id="recImportFile" accept=".json,application/json" class="vh"></label></div>
+        </details>
       </div>
     </div>
   </details>
@@ -273,6 +310,7 @@ img{max-width:100%}
   </div>
 </div>
 <div class="toast" id="toast" hidden></div>
+<div id="printSheet" aria-hidden="true"></div>
 <script>
 const LAUTE = [
   {l:"M",v:0,s:"mmmmmmmmmm",w:"Maus",e:"🐭"},{l:"A",v:1,s:"aaaaaaah",w:"Affe",e:"🐒"},
@@ -614,6 +652,14 @@ function renderEx(){const el=$("exList");if(!el)return;el.innerHTML="";
     const hear=sbtn("▶",()=>playLaut([x.l],()=>setTimeout(()=>speak(x.w),400)));hear.setAttribute("aria-label","Laut und Wort anhören");
     const rs=sbtn("Vorgabe",()=>{delete st.ex[x.l];w.value="";e.value="";exChanged();});rs.textContent="↺";rs.title="Vorgabe wiederherstellen";rs.setAttribute("aria-label","Vorgabe wiederherstellen");
     row.append(t,w,e,hear,rs);el.appendChild(row);});}
+
+/* ---------- Lautkarten drucken ---------- */
+$("printEx").onclick=()=>{const only=$("printLearned").checked,list=LAUTE.filter(x=>!only||st.learned.has(x.l)),ps=$("printSheet");ps.innerHTML="";
+  list.forEach(x=>{const c=document.createElement("div");c.className="pcard";
+    const l=document.createElement("div");l.className="pl "+(x.v?"v":"k");l.textContent=dispLaut(x.l);
+    const e=document.createElement("div");e.className="pe";e.textContent=x.e;
+    const w=document.createElement("div");w.className="pw";w.textContent=x.w;c.append(l,e,w);ps.appendChild(c);});
+  try{window.print();}catch(err){toast("Drucken geht hier nicht. Öffne die App über GitHub.");}};
 function renderAll(){applyEx();renderEx();renderSeg();renderRec();renderLaute();renderBoard();renderTray();renderLearn();if(st.wi>=0)renderWord();}
 renderAll();
 loadRecs();
